@@ -1,0 +1,41 @@
+appId: ai.otto.desktop
+productName: Otto
+directories:
+  output: release
+files:
+  - dist/**/*
+  - dist-desktop/**/*
+  - package.json
+asar: true
+asarUnpack:
+  - node_modules/tesseract.js/**/*
+  - node_modules/tesseract.js-core/**/*
+  - node_modules/@tesseract.js-data/**/*
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+  hardenedRuntime: true
+  entitlements: desktop/entitlements.mac.plist
+  entitlementsInherit: desktop/entitlements.mac.plist
+  extendInfo:
+    NSAccessibilityUsageDescription: Otto uses accessibility to observe and act in apps you explicitly select.
+    NSScreenCaptureUsageDescription: Otto shows the selected app window so you can review each action.
+  extraResources:
+    - from: desktop/native/macos/otto-ax
+      to: native/otto-ax
+win:
+  target:
+    - nsis
+  extraResources:
+    - from: desktop/native/windows/otto-uia.ps1
+      to: native/otto-uia.ps1
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+publish:
+  provider: github
+  owner: NobleSpartan6
+  repo: otto

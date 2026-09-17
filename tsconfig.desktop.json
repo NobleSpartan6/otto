@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM"],
+    "module": "NodeNext", "moduleResolution": "NodeNext",
+    "strict": true, "skipLibCheck": true, "esModuleInterop": true,
+    "outDir": "dist-desktop", "rootDir": ".", "types": ["node"]
+  },
+  "include": ["desktop/**/*.ts", "desktop/**/*.cts", "core/**/*.ts", "shared/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-desktop/
+release/
+desktop/native/macos/otto-ax
+.env
+.env.*
+!.env.example
+.DS_Store
+output/
+test-results/
+playwright-report/
+*.log
