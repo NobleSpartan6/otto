@@ -30,6 +30,7 @@ export interface Plan {
   needsHuman: string | null;
   latencyMs: number;
   model: string;
+  usage?: { inputTokens: number; outputTokens: number };
 }
 
 export class PlannerError extends Error {
@@ -84,6 +85,21 @@ function parsePlan(
     !response.model.startsWith(PLANNER_MODEL)
   )
     invalid();
+  let usage: Plan["usage"];
+  if (response.usage !== undefined && response.usage !== null) {
+    if (
+      !record(response.usage) ||
+      !Number.isSafeInteger(response.usage.input_tokens) ||
+      (response.usage.input_tokens as number) < 0 ||
+      !Number.isSafeInteger(response.usage.output_tokens) ||
+      (response.usage.output_tokens as number) < 0
+    )
+      invalid();
+    usage = {
+      inputTokens: response.usage.input_tokens as number,
+      outputTokens: response.usage.output_tokens as number,
+    };
+  }
   const parts: string[] = [];
   for (const item of response.output) {
     if (!record(item)) invalid();
@@ -158,6 +174,7 @@ function parsePlan(
     done: value.done,
     needsHuman: value.needsHuman,
     model: response.model,
+    ...(usage ? { usage } : {}),
   };
 }
 

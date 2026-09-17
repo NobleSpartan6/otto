@@ -19,6 +19,7 @@ export function allowedExternalUrl(input: unknown): string {
     "console.typesafe.ai",
     "docs.typesafe.ai",
     "typesafe.ai",
+    "platform.openai.com",
   ]);
   if (
     url.protocol !== "https:" ||

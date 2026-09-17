@@ -4,6 +4,8 @@ An open-source desktop computer-use agent for **macOS and Windows**. Otto combin
 
 **Status: early development alpha.** This is not yet a validated SOTA release. Windows execution, broad task success rates, signed installers, and subscription sign-in must be verified before a general launch. See [validation](docs/validation.md).
 
+[Download alpha builds](https://github.com/NobleSpartan6/otto/releases) · [Project page](https://noblespartan6.github.io/otto/) · [Technical spec](docs/technical-spec.md)
+
 ## How it works
 
 1. Select the running apps Otto may use and describe a task.
@@ -18,7 +20,9 @@ Native operations include press/invoke, text-field values, supported scrolling, 
 
 ## Getting started
 
-Requirements: Node.js 24+, npm, macOS 14+ with Xcode command-line tools, or Windows 10/11 with Windows PowerShell 5.1. Linux can build the website but does not have a native control adapter.
+Downloadable builds bundle the runtime; they require your own API keys and OS permissions. These alpha installers are unsigned and not notarized. Read their release notes before installing.
+
+To build from source: Node.js 24+, npm, macOS 14+ with Xcode command-line tools, or Windows 10/11 with Windows PowerShell 5.1. Linux can build the website but does not have a native control adapter.
 
 ```sh
 git clone https://github.com/NobleSpartan6/otto.git

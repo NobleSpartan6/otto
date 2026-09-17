@@ -1,0 +1,47 @@
+name: Windows native fixture smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:native
+      - name: Exercise only the disposable WinForms fixture
+        id: smoke
+        continue-on-error: true
+        run: npx tsx tests/native/windows/smoke.ts
+        timeout-minutes: 3
+      - name: Report actual native result
+        if: always()
+        shell: pwsh
+        run: |
+          $path = 'test-results/windows-native-smoke.json'
+          if (-not (Test-Path $path)) { throw 'The native smoke did not produce a result; no validation claim is possible.' }
+          $result = Get-Content $path -Raw | ConvertFrom-Json
+          "## Windows native smoke: $($result.status.ToUpperInvariant())" >> $env:GITHUB_STEP_SUMMARY
+          "" >> $env:GITHUB_STEP_SUMMARY
+          $result.claimScope >> $env:GITHUB_STEP_SUMMARY
+          foreach ($check in $result.checks) { "- $check" >> $env:GITHUB_STEP_SUMMARY }
+          if ($result.reason) { "`nReason: $($result.reason)" >> $env:GITHUB_STEP_SUMMARY }
+          if ($result.status -eq 'blocked') {
+            Write-Output '::warning::BLOCKED: The runner could not provide native desktop validation. This run is not evidence of Windows CUA success.'
+          } elseif ($result.status -ne 'passed') { throw 'Windows native fixture validation failed. See the JSON report.' }
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: windows-native-smoke-result
+          path: test-results/windows-native-smoke.json
+          if-no-files-found: warn
+          retention-days: 14

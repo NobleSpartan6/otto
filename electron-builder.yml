@@ -10,6 +10,7 @@ asar: true
 asarUnpack:
   - node_modules/**/*
 mac:
+  icon: desktop/icons/otto.icns
   category: public.app-category.productivity
   target:
     - dmg
@@ -24,6 +25,7 @@ mac:
     - from: desktop/native/macos/otto-ax
       to: native/otto-ax
 win:
+  icon: desktop/icons/otto.ico
   target:
     - nsis
   extraResources:

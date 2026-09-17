@@ -144,14 +144,14 @@ export function DesktopPreview({
               <span>Bring your own keys</span>
             </div>
             <ExternalLink
-              href={`${sourceUrl}#getting-started`}
+              href={`${sourceUrl}/releases`}
               className="text-link"
             >
-              Build and run the desktop app
+              Get the desktop alpha
               <ArrowUpRight size={16} />
             </ExternalLink>
             <p className="release-note">
-              Source preview. Packaged downloads are not available yet.
+              Unsigned test builds. Read the release notes before installing.
             </p>
           </div>
         )}

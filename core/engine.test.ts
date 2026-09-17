@@ -579,6 +579,38 @@ test("hybrid escalates uncertainty after an ordinary fast-path action", async ()
   engine.stopAll();
 });
 
+test("trace metrics sum measured usage and latency while preserving unknown planner totals", async () => {
+  const driver = new Driver();
+  driver.makeSnapshot = (id, sequence) => ({ ...snapshot(id, sequence), text: `State ${sequence}` });
+  const usage = [
+    { inputTokens: 1000, outputTokens: 20 },
+    { inputTokens: 700, outputTokens: 30 },
+    undefined,
+    { inputTokens: 100, outputTokens: 4 },
+  ];
+  let calls = 0;
+  const engine = new OttoEngine(
+    driver,
+    async request => ({ ...decision(request), confidence: 0.2 }),
+    async request => ({ ...proposal(request), usage: usage[calls++] }),
+  );
+  try {
+    let run = await engine.start({ ...input, mode: "hybrid" }, KEY, "openai-key");
+    assert.deepEqual(run.metrics, { jevInputTokens: 0, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 0 });
+    run = await engine.waitForIdle(run.id);
+    assert.deepEqual(run.metrics, { jevInputTokens: 100, plannerInputTokens: 1000, plannerOutputTokens: 20, modelLatencyMs: 6 });
+    run = await approveReady(engine, run.id, run.pendingAction!.id);
+    assert.deepEqual(run.metrics, { jevInputTokens: 300, plannerInputTokens: 1700, plannerOutputTokens: 50, modelLatencyMs: 13 });
+    run = await approveReady(engine, run.id, run.pendingAction!.id);
+    assert.deepEqual(run.metrics, { jevInputTokens: 500, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 20 });
+    run = await approveReady(engine, run.id, run.pendingAction!.id);
+    assert.deepEqual(run.metrics, { jevInputTokens: 700, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 27 });
+    assert.equal(run.plannerCalls, 4);
+    assert.equal(run.decisionCalls, 7);
+    assert.deepEqual(JSON.parse(JSON.stringify(run)).metrics, run.metrics);
+  } finally { engine.stopAll(); }
+});
+
 test("hybrid escalates a three-action stall without issuing an unapproved recovery action", async () => {
   const driver = new Driver();
   const reasons: string[] = [];

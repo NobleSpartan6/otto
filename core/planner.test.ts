@@ -142,6 +142,27 @@ test("sends the selected-window image only with explicit consent as an image con
   await plan(request);
 });
 
+test("records actual response usage and rejects malformed counts without inventing missing usage", async () => {
+  const request = input();
+  const parse = (usage: unknown) => createPlanner(async () =>
+    Response.json({ ...response(output(request)), usage }),
+  )(request);
+  assert.deepEqual((await parse({ input_tokens: 1234, output_tokens: 56 })).usage,
+    { inputTokens: 1234, outputTokens: 56 });
+  assert.deepEqual((await parse({ input_tokens: 0, output_tokens: 0 })).usage,
+    { inputTokens: 0, outputTokens: 0 });
+  assert.equal((await parse(undefined)).usage, undefined);
+  assert.equal((await parse(null)).usage, undefined);
+  for (const usage of [
+    {},
+    { input_tokens: "123", output_tokens: 1 },
+    { input_tokens: 1, output_tokens: -1 },
+    { input_tokens: 1.5, output_tokens: 1 },
+    { input_tokens: Number.MAX_SAFE_INTEGER + 1, output_tokens: 1 },
+    { input_tokens: 1, output_tokens: Infinity },
+  ]) await assert.rejects(parse(usage), errorCode("invalid_response"));
+});
+
 test("rejects unknown targets, extra executable fields, incompatible text, and false terminal shapes", async () => {
   const request = input();
   const valid = output(request);

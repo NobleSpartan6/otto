@@ -513,13 +513,13 @@ export default function App() {
                 </p>
                 <ExternalLink
                   className="primary-button"
-                  href={`${sourceUrl}#getting-started`}
+                  href={`${sourceUrl}/releases`}
                 >
-                  Get started
+                  Download alpha
                   <ArrowUpRight size={17} />
                 </ExternalLink>
                 <p className="control-note">
-                  Run locally. Bring your own API keys.
+                  macOS and Windows. Bring your own API keys.
                 </p>
               </div>
             )}
@@ -741,6 +741,10 @@ export default function App() {
             <div className="dialog-actions">
               <ExternalLink href="https://console.typesafe.ai/home">
                 Get a TypeSafe key
+                <ArrowUpRight size={14} />
+              </ExternalLink>
+              <ExternalLink href="https://platform.openai.com/api-keys">
+                OpenAI keys
                 <ArrowUpRight size={14} />
               </ExternalLink>
               <button

@@ -234,6 +234,12 @@ export class OttoEngine {
         mode: input.mode ?? "jev",
         plannerCalls: 0,
         decisionCalls: 0,
+        metrics: {
+          jevInputTokens: 0,
+          plannerInputTokens: null,
+          plannerOutputTokens: null,
+          modelLatencyMs: 0,
+        },
       },
       apiKey,
       controller: new AbortController(),
@@ -541,9 +547,15 @@ export class OttoEngine {
       decision.confidence > 1 ||
       !Number.isFinite(decision.complete) ||
       decision.complete < 0 ||
-      decision.complete > 1
+      decision.complete > 1 ||
+      !Number.isSafeInteger(decision.inputTokens) ||
+      decision.inputTokens < 0 ||
+      !Number.isFinite(decision.latencyMs) ||
+      decision.latencyMs < 0
     )
       throw new Error("Invalid model decision.");
+    state.run.metrics!.jevInputTokens += decision.inputTokens;
+    state.run.metrics!.modelLatencyMs += decision.latencyMs;
     this.event(state, "decision", action.label, {
       ...decision,
       model: "jev-latest",
@@ -612,7 +624,14 @@ export class OttoEngine {
       state.drafts,
       true,
     );
-    state.run.plannerCalls = (state.run.plannerCalls ?? 0) + 1;
+    const previousCalls = state.run.plannerCalls ?? 0;
+    const metrics = state.run.metrics!;
+    const previousInputTokens = metrics.plannerInputTokens;
+    const previousOutputTokens = metrics.plannerOutputTokens;
+    state.run.plannerCalls = previousCalls + 1;
+    // Pending, cancelled, failed, or unreported usage is unknown, never zero.
+    metrics.plannerInputTokens = null;
+    metrics.plannerOutputTokens = null;
     const proposal = await this.plannerFn({
       goal: state.run.goal,
       observation: structuredClone(observation),
@@ -651,6 +670,11 @@ export class OttoEngine {
       (proposal.done && proposal.needsHuman !== null) ||
       !Number.isFinite(proposal.latencyMs) ||
       proposal.latencyMs < 0 ||
+      (proposal.usage !== undefined &&
+        (!Number.isSafeInteger(proposal.usage.inputTokens) ||
+          proposal.usage.inputTokens < 0 ||
+          !Number.isSafeInteger(proposal.usage.outputTokens) ||
+          proposal.usage.outputTokens < 0)) ||
       typeof proposal.model !== "string" ||
       [
         proposal.subgoal,
@@ -664,6 +688,22 @@ export class OttoEngine {
       )
     )
       throw new Error("Invalid planner proposal.");
+    metrics.modelLatencyMs += proposal.latencyMs;
+    if (proposal.usage) {
+      // Once one response omits usage, subsequent values cannot repair the total.
+      metrics.plannerInputTokens =
+        previousCalls === 0
+          ? proposal.usage.inputTokens
+          : previousInputTokens === null
+            ? null
+            : previousInputTokens + proposal.usage.inputTokens;
+      metrics.plannerOutputTokens =
+        previousCalls === 0
+          ? proposal.usage.outputTokens
+          : previousOutputTokens === null
+            ? null
+            : previousOutputTokens + proposal.usage.outputTokens;
+    }
     if (proposal.text !== null) {
       const target = observation.controls.find(
         (control) => control.id === selected!.targetId,

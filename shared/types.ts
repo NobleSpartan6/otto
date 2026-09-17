@@ -77,6 +77,13 @@ export interface OttoRun {
   subgoal?: string;
   plannerCalls?: number;
   decisionCalls?: number;
+  /** Measured responses only; failed/cancelled requests may have unreported usage. */
+  metrics?: {
+    jevInputTokens: number;
+    plannerInputTokens: number | null;
+    plannerOutputTokens: number | null;
+    modelLatencyMs: number;
+  };
   maxSteps: number;
   createdAt: string;
   events: RunEvent[];
