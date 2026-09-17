@@ -2,7 +2,7 @@
 
 An open-source desktop computer-use agent for **macOS and Windows**. Otto combines fast TypeSafe Jev decisions with an optional GPT-6 Astra planner. It works through native accessibility controls and local OCR, rather than a browser-only sandbox.
 
-**Status: early development alpha.** This is not yet a validated SOTA release. Windows execution, broad task success rates, signed installers, and subscription sign-in must be verified before a general launch. See [validation](docs/validation.md).
+**Status: early development alpha.** Native controls have been tested on macOS and Windows. This is not yet a validated SOTA release: broad app compatibility, real model-driven task success, signed installers, and subscription sign-in remain launch gates. See [validation](docs/validation.md).
 
 [Download alpha builds](https://github.com/NobleSpartan6/otto/releases) · [Project page](https://noblespartan6.github.io/otto/) · [Technical spec](docs/technical-spec.md)
 

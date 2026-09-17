@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "checks": [
+    "Disposable WinForms fixture compiled with Windows PowerShell.",
+    "Fixture has a visible interactive Windows desktop and its own window.",
+    "Only the launched fixture PID was configured for native actions.",
+    "UIA ValuePattern field and InvokePattern-capable button observed in the selected child.",
+    "Unconfigured app observation/action rejected without changing the fixture.",
+    "Actual UIA ValuePattern fill changed fixture text; the consumed snapshot rejected reuse.",
+    "Actual UIA button invocation applied the literal exactly once; repeated invocation was rejected.",
+    "A replaced snapshot was rejected; fresh native observation confirmed the changed fixture status.",
+    "Empty configuration revoked access to the fixture."
+  ],
+  "screenshot": {
+    "available": true,
+    "windowBounds": {
+      "y": 240,
+      "width": 526,
+      "height": 239,
+      "x": 249
+    },
+    "screenshotSize": {
+      "height": 239,
+      "width": 526
+    }
+  },
+  "cleanup": "The disposable fixture closed through its private shutdown signal.",
+  "platform": "win32",
+  "at": "2026-09-17T06:11:49.492Z",
+  "claimScope": "Disposable WinForms UIA discovery/fill/invoke only; no model, OCR-click, global key, or arbitrary-app compatibility claim."
+}

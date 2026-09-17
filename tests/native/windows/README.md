@@ -1,5 +1,7 @@
 # Windows native fixture smoke
 
+Verified on 2026-09-17: [workflow run](https://github.com/NobleSpartan6/otto/actions/runs/35188722719) returned `status: passed`. The unmodified [result artifact](RESULTS.json) records the tested scope and screenshot geometry.
+
 Run from the repository root on an interactive Windows desktop:
 
 ```sh
