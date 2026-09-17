@@ -3,11 +3,11 @@
 This file records observed results, not forecast capability.
 
 - TypeSafe adapter: mocked contract/error/cancellation tests passed; live API execution awaits a configured user key.
-- Native task engine: approval, cancellation, stale snapshots, completion confirmation, privacy boundaries, and limits have automated tests.
-- macOS: Swift helper compiled with Swift 6.3.2 and strict concurrency; native permission query returned Accessibility and Screen Capture available in the development process.
-- Windows: PowerShell parser, embedded C# compilation, and protocol/guard tests passed on the development host. Actual Windows UI execution remains unverified.
+- Native task engine: 55 tests pass across provider contracts, planning, approval, cancellation, stale snapshots, completion confirmation, privacy boundaries, and limits.
+- macOS: Swift helper compiled with Swift 6.3.2 and strict concurrency. A real disposable AppKit fixture passed seven native checks: discovery, app allowlist, consumed snapshots, exact text fill, button effect, selected-window capture, and local OCR geometry. See [native evidence](../tests/native/RESULTS.md).
+- Windows: compilation, unit tests, and read-only native protocol smoke passed on a real Windows GitHub runner. Desktop UI effects, focus behavior, and screenshots still need a Windows GUI test.
 - Local OCR: recognized text from a local UI image with bundled language data, without a remote OCR service.
-- Desktop UI: TypeScript/build and website layout/keyboard checks passed. Native provider-backed task runs are pending.
+- Desktop UI: the actual Electron app passed configuration/app discovery, consent gating, app limits, settings, mode switching, and keyboard/modal focus checks. Its screenshot was compared against the design concept. Provider-backed task runs are pending.
 - Distribution: no signed/notarized public installer or benchmark-backed SOTA claim yet.
 
 Update this report with actual build, native smoke, provider-backed run, and release results as they are completed.

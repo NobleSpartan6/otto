@@ -1,6 +1,6 @@
 # Connecting a ChatGPT subscription
 
-Status: researched on 2026-09-17; **not implemented or advertised as available**. Otto's core remains TypeSafe-only.
+Status: researched on 2026-09-17. **ChatGPT subscription connection is not implemented or advertised as available.** Otto now supports a TypeSafe-only mode and an optional hybrid planner using the user's separately billed OpenAI Platform API key. The hybrid implementation calls the Responses API with `gpt-6-astra`, strict structured output, `tools: []`, and explicit screenshot consent; it does not use ChatGPT subscription credentials.
 
 ## What is supported
 
@@ -48,4 +48,4 @@ Sources: [Configuration reference](https://learn.chatgpt.com/docs/config-file/co
 
 Implement this only after either a supported tools-disabled interface is verified for a pinned Codex version, or a separately isolated runtime is built and tested. An isolated design must keep host files, inherited plugins/configuration, signed-in application sessions, and the Codex authentication store outside model-controlled execution. It must expose only Otto's bounded observation and plan exchange, enforce resource limits, deny unsolicited approval requests, and reject unexpected tool calls before execution. The default read-only preset and an empty working directory are not sufficient evidence of that isolation.
 
-Until then, do not add a nonfunctional “Connect ChatGPT” button to the desktop app. If a paid optional planner is later wanted, the native Responses API with the user's Platform key supports a clean no-tools request; keep that explicitly separate from subscription access and from TypeSafe-only mode.
+Until then, do not add a nonfunctional “Connect ChatGPT” button to the desktop app. The implemented optional planner uses the native Responses API with the user's Platform key and no tools. Keep that explicitly separate from subscription access and from TypeSafe-only mode. See [`core/planner.ts`](../core/planner.ts) for the implemented adapter.

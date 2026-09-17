@@ -4,18 +4,19 @@ import { dirname, join } from "node:path";
 import type { NativeControl, NativeSnapshot } from "../shared/types.js";
 
 const require = createRequire(import.meta.url);
+const workerAsset = (path: string) => path.replace(/app\.asar([\\/])/, "app.asar.unpacked$1");
 export class LocalOCR {
   private worker?: Promise<Worker>;
   private getWorker() {
     if (!this.worker)
       this.worker = createWorker("eng", 1, {
         workerPath:
-          require.resolve("tesseract.js/src/worker-script/node/index.js"),
-        corePath: dirname(require.resolve("tesseract.js-core/package.json")),
-        langPath: join(
+          workerAsset(require.resolve("tesseract.js/src/worker-script/node/index.js")),
+        corePath: workerAsset(dirname(require.resolve("tesseract.js-core/package.json"))),
+        langPath: workerAsset(join(
           dirname(require.resolve("@tesseract.js-data/eng/package.json")),
           "4.0.0_best_int",
-        ),
+        )),
         cacheMethod: "none",
         gzip: true,
         logger: () => undefined,

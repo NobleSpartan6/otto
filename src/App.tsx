@@ -205,7 +205,7 @@ export default function App() {
     setCopyError("");
     try {
       await navigator.clipboard.writeText(
-        native ? sourceUrl : window.location.origin,
+        native ? sourceUrl : new URL(".", window.location.href).href,
       );
       setCopied(true);
     } catch {
@@ -223,7 +223,7 @@ export default function App() {
             otto<span>*</span>
           </span>
         ) : (
-          <a href="/" className="wordmark" aria-label="Otto home">
+          <a href="./" className="wordmark" aria-label="Otto home">
             otto<span>*</span>
           </a>
         )}

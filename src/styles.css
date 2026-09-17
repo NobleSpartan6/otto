@@ -20,14 +20,12 @@ body {
 }
 button,
 input,
-textarea,
-select {
+textarea {
   font: inherit;
 }
 button,
 a,
 input,
-select,
 textarea {
   -webkit-tap-highlight-color: transparent;
 }
@@ -50,14 +48,12 @@ a {
 button:focus-visible,
 a:focus-visible,
 textarea:focus-visible,
-input:focus-visible,
-select:focus-visible {
+input:focus-visible {
   outline: 3px solid #91baff;
   outline-offset: 3px;
 }
 button,
 input,
-select,
 textarea {
   border-radius: var(--radius);
 }
@@ -160,14 +156,6 @@ textarea {
   gap: 10px;
   margin-bottom: 6px;
 }
-.field-heading label {
-  font-size: 13px;
-  color: #39465b;
-}
-.field-heading .icon-button {
-  height: 22px;
-  width: 25px;
-}
 .task-panel form > .task-label {
   text-transform: uppercase;
   font-size: 11px;
@@ -193,57 +181,6 @@ textarea {
 }
 .task-panel textarea::placeholder {
   color: #929cad;
-}
-.select-wrap {
-  position: relative;
-}
-.select-wrap:after {
-  content: "";
-  border-right: 1.5px solid #59667b;
-  border-bottom: 1.5px solid #59667b;
-  width: 7px;
-  height: 7px;
-  transform: rotate(45deg);
-  position: absolute;
-  right: 16px;
-  top: 15px;
-  pointer-events: none;
-}
-.task-panel select {
-  width: 100%;
-  appearance: none;
-  border: 1px solid #d4dce8;
-  padding: 10px 35px 10px 12px;
-  background: #fff;
-  font-size: 13px;
-  min-height: 43px;
-  box-shadow: 0 1px 2px #10121803;
-}
-.selected-apps {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.selected-apps li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: #f0f5ff;
-  color: #356bc0;
-  padding: 4px 6px 4px 9px;
-  border-radius: 5px;
-  font-size: 11px;
-}
-.selected-apps button {
-  border: 0;
-  background: transparent;
-  color: #5380c3;
-  font-size: 17px;
-  padding: 0 2px;
-  line-height: 1;
 }
 .primary-button {
   background: var(--accent);
@@ -501,14 +438,6 @@ textarea {
   line-height: 1.8;
   margin: 0;
   max-width: 360px;
-}
-.empty-footnote {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 35px;
-  color: #97a2b3;
-  font-size: 11px;
 }
 .platform-list {
   display: flex;
@@ -791,20 +720,6 @@ textarea {
 }
 .spinner {
   animation: spin 1s linear infinite;
-}
-.stop-button {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 0;
-  border: 0;
-  background: none;
-  color: #748095;
-  font-size: 12px;
-}
-.stop-button:hover {
-  color: #b04444;
 }
 .approval-panel {
   display: flex;
@@ -1201,13 +1116,6 @@ dialog::backdrop {
   }
   .rail-footer {
     padding-top: 22px;
-    font-size: 11px;
-  }
-  .control-note {
-    font-size: 11px;
-  }
-  .start-button {
-    font-size: 16px;
   }
   .site-header {
     height: 67px;
@@ -1301,12 +1209,6 @@ dialog::backdrop {
   }
   .principles {
     gap: 18px;
-  }
-  .task-panel select {
-    font-size: 14px;
-  }
-  .selected-apps li {
-    font-size: 12px;
   }
   .checkbox-label,
   .task-panel form > label.checkbox-label {
@@ -1810,10 +1712,6 @@ dialog::backdrop {
   }
   .native-app .task-panel textarea {
     min-height: 110px;
-  }
-  .native-app .task-panel {
-    border: 0;
-    padding: 0;
   }
   .native-app .workspace-column {
     padding: 0 18px 25px;

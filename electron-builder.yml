@@ -8,9 +8,7 @@ files:
   - package.json
 asar: true
 asarUnpack:
-  - node_modules/tesseract.js/**/*
-  - node_modules/tesseract.js-core/**/*
-  - node_modules/@tesseract.js-data/**/*
+  - node_modules/**/*
 mac:
   category: public.app-category.productivity
   target:
