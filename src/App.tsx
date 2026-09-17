@@ -579,7 +579,7 @@ export default function App() {
             native={native}
             sourceUrl={sourceUrl}
           />
-          <Activity
+          {native && <Activity
             native={native}
             platform={config?.platform}
             run={run}
@@ -587,7 +587,7 @@ export default function App() {
             onApprove={() => void action("approve")}
             onConfirm={() => void action("confirm")}
             onStop={() => void action("stop")}
-          />
+          />}
         </div>
       </main>
       {dialog === "how" && (
