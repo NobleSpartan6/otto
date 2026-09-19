@@ -73,6 +73,23 @@ export type RunStatus =
   | "failed"
   | "limit_reached"
   | "blocked";
+export interface JevValidationDiagnostic {
+  code: "invalid_json" | "response_shape" | "model_metadata" | "answers_shape" | "usage_shape" |
+    "action_shape" | "choice_unknown" | "confidence_range" | "probabilities_shape" | "probability_keys" |
+    "probability_range" | "probability_total" | "choice_not_max" | "completion_shape" | "completion_range" |
+    "input_usage" | "output_usage";
+  candidateCount: number;
+  probabilityCount?: number;
+  missingCandidateCount?: number;
+  unknownCandidateCount?: number;
+  /** Counts are capped at 65,535; this flag discloses a capped summary. */
+  countsCapped?: boolean;
+  /** Included only when every supplied probability is finite and within 0–1. */
+  probabilityTotal?: number;
+  totalCapped?: boolean;
+  choiceProbability?: number;
+  maxProbability?: number;
+}
 export interface JevRequestMetric {
   id: string;
   requestedModel: string;
@@ -86,6 +103,8 @@ export interface JevRequestMetric {
   outputTokens: number | null;
   /** Client-observed request elapsed time, including failed requests; not model inference time. */
   latencyMs: number | null;
+  /** Fixed codes and bounded numeric shape information only; never response text or option IDs. */
+  validation?: JevValidationDiagnostic;
 }
 export interface OttoRun {
   id: string;

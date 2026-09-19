@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { JevRequestMetric } from "../shared/types.js";
+import type { JevRequestMetric, JevValidationDiagnostic } from "../shared/types.js";
 
 const ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 const TIMEOUT_MS = 15_000;
@@ -39,6 +39,7 @@ export class TypeSafeError extends Error {
     public readonly code: ErrorCode,
     message: string,
     public readonly status?: number,
+    public readonly validation?: JevValidationDiagnostic,
   ) {
     super(message);
     this.name = "TypeSafeError";
@@ -66,10 +67,58 @@ function isModelName(value: unknown): value is string {
   return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/.test(value);
 }
 
-function invalidResponse(): never {
+const DIAGNOSTIC_LIMIT = 65_535;
+const VALIDATION_MESSAGES: Record<JevValidationDiagnostic["code"], string> = {
+  invalid_json: "invalid JSON",
+  response_shape: "invalid response structure",
+  model_metadata: "invalid model metadata",
+  answers_shape: "missing answer map",
+  usage_shape: "missing usage object",
+  action_shape: "invalid choice answer",
+  choice_unknown: "unknown action ID",
+  confidence_range: "confidence outside 0–1",
+  probabilities_shape: "invalid probability map",
+  probability_keys: "probability options do not match the candidates",
+  probability_range: "probability outside 0–1",
+  probability_total: "probabilities do not sum to 1",
+  choice_not_max: "choice does not match the highest probability",
+  completion_shape: "invalid completion answer",
+  completion_range: "completion probability outside 0–1",
+  input_usage: "invalid input usage count",
+  output_usage: "invalid output usage count",
+};
+
+function diagnostic(value: unknown, candidateIds: Set<string>, code: JevValidationDiagnostic["code"]): JevValidationDiagnostic {
+  const result: JevValidationDiagnostic = { code, candidateCount: Math.min(candidateIds.size, DIAGNOSTIC_LIMIT) };
+  if (candidateIds.size > DIAGNOSTIC_LIMIT) result.countsCapped = true;
+  const action = isRecord(value) && isRecord(value.answers) ? value.answers.next_action : undefined;
+  if (!isRecord(action) || !isRecord(action.probabilities)) return result;
+  const entries = Object.entries(action.probabilities);
+  const unknown = entries.filter(([id]) => !candidateIds.has(id)).length;
+  const missing = [...candidateIds].filter(id => !Object.hasOwn(action.probabilities as object, id)).length;
+  result.probabilityCount = Math.min(entries.length, DIAGNOSTIC_LIMIT);
+  result.unknownCandidateCount = Math.min(unknown, DIAGNOSTIC_LIMIT);
+  result.missingCandidateCount = Math.min(missing, DIAGNOSTIC_LIMIT);
+  if (Math.max(entries.length, unknown, missing) > DIAGNOSTIC_LIMIT) result.countsCapped = true;
+  // Invalid numbers are omitted rather than copied, clamped, or turned into a
+  // misleading total. No provider-supplied strings or option IDs are retained.
+  if (entries.length && entries.every(([, probability]) => isProbability(probability))) {
+    const total = entries.reduce((sum, [, probability]) => sum + (probability as number), 0);
+    result.probabilityTotal = Math.min(total, DIAGNOSTIC_LIMIT);
+    if (total > DIAGNOSTIC_LIMIT) result.totalCapped = true;
+    result.maxProbability = entries.reduce((max, [, probability]) => Math.max(max, probability as number), 0);
+    if (typeof action.choice === "string" && candidateIds.has(action.choice) &&
+        Object.hasOwn(action.probabilities, action.choice)) result.choiceProbability = action.probabilities[action.choice] as number;
+  }
+  return result;
+}
+
+function invalidResponse(validation: JevValidationDiagnostic): never {
   throw new TypeSafeError(
     "invalid_response",
-    "TypeSafe returned an invalid decision. No action was taken.",
+    `TypeSafe returned an invalid decision (${VALIDATION_MESSAGES[validation.code]}). This decision was not executed.`,
+    undefined,
+    validation,
   );
 }
 
@@ -77,46 +126,37 @@ function parseDecision(
   value: unknown,
   candidateIds: Set<string>,
 ): Omit<Decision, "latencyMs"> {
-  if (
-    !isRecord(value) ||
-    !isModelName(value.model)
-  )
-    invalidResponse();
-  if (!isRecord(value.answers) || !isRecord(value.usage)) invalidResponse();
+  const reject = (code: JevValidationDiagnostic["code"]): never => invalidResponse(diagnostic(value, candidateIds, code));
+  if (!isRecord(value)) return reject("response_shape");
+  if (!isModelName(value.model)) return reject("model_metadata");
+  if (!isRecord(value.answers)) return reject("answers_shape");
+  if (!isRecord(value.usage)) return reject("usage_shape");
 
   const action = value.answers.next_action;
   const complete = value.answers.complete;
-  if (
-    !isRecord(action) ||
-    action.type !== "choice" ||
-    typeof action.choice !== "string" ||
-    !candidateIds.has(action.choice) ||
-    !isProbability(action.confidence) ||
-    !isRecord(action.probabilities) ||
-    !isRecord(complete) ||
-    complete.type !== "noul" ||
-    !isProbability(complete.noul) ||
-    !isTokenCount(value.usage.input_tokens) ||
-    !isTokenCount(value.usage.output_tokens)
-  )
-    invalidResponse();
+  if (!isRecord(action) || action.type !== "choice" || typeof action.choice !== "string") return reject("action_shape");
+  if (!candidateIds.has(action.choice)) return reject("choice_unknown");
+  if (!isProbability(action.confidence)) return reject("confidence_range");
+  if (!isRecord(action.probabilities)) return reject("probabilities_shape");
+  if (!isRecord(complete) || complete.type !== "noul") return reject("completion_shape");
+  if (!isProbability(complete.noul)) return reject("completion_range");
+  if (!isTokenCount(value.usage.input_tokens)) return reject("input_usage");
+  if (!isTokenCount(value.usage.output_tokens)) return reject("output_usage");
 
   const entries = Object.entries(action.probabilities);
-  if (entries.length !== candidateIds.size) invalidResponse();
+  if (entries.length !== candidateIds.size) return reject("probability_keys");
   let total = 0;
   let highest = 0;
   const probabilities: Record<string, number> = Object.create(null);
   for (const [id, probability] of entries) {
-    if (!candidateIds.has(id) || !isProbability(probability)) invalidResponse();
+    if (!candidateIds.has(id)) return reject("probability_keys");
+    if (!isProbability(probability)) return reject("probability_range");
     probabilities[id] = probability;
     total += probability;
     highest = Math.max(highest, probability);
   }
-  if (
-    Math.abs(total - 1) > 0.001 ||
-    probabilities[action.choice]! < highest - 0.000001
-  )
-    invalidResponse();
+  if (Math.abs(total - 1) > 0.001) return reject("probability_total");
+  if (probabilities[action.choice]! < highest - 0.000001) return reject("choice_not_max");
 
   return {
     choice: action.choice,
@@ -225,7 +265,7 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
       startedAt: new Date().toISOString(), completedAt: null, outcome: "pending",
       responseReceived: false, httpStatus: null, inputTokens: null, outputTokens: null, latencyMs: null,
     };
-    const publish = () => input.onRequest?.({ ...accounting });
+    const publish = () => input.onRequest?.({ ...accounting, ...(accounting.validation ? { validation: { ...accounting.validation } } : {}) });
 
     try {
       publish();
@@ -254,7 +294,7 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
       try {
         value = await response.json();
       } catch {
-        invalidResponse();
+        invalidResponse(diagnostic(undefined, candidateIds, "invalid_json"));
       }
       // Preserve reported usage even when later action validation rejects the response.
       // Missing or malformed usage is unknown, never a fabricated zero.
@@ -265,7 +305,7 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
           if (isTokenCount(value.usage.input_tokens)) accounting.inputTokens = value.usage.input_tokens;
           if (isTokenCount(value.usage.output_tokens)) accounting.outputTokens = value.usage.output_tokens;
         }
-        if (typeof value.model === "string" && value.model.includes(input.apiKey)) invalidResponse();
+        if (typeof value.model === "string" && value.model.includes(input.apiKey)) invalidResponse(diagnostic(value, candidateIds, "model_metadata"));
       }
       if (controller.signal.aborted)
         throw new TypeSafeError("cancelled", "The decision was cancelled.");
@@ -278,6 +318,8 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
     } catch (error) {
       accounting.outcome = timedOut ? "timeout" : input.signal?.aborted ? "cancelled" :
         error instanceof TypeSafeError && error.code !== "invalid_input" ? error.code : "network_error";
+      if (accounting.outcome === "invalid_response" && error instanceof TypeSafeError && error.validation)
+        accounting.validation = { ...error.validation };
       if (timedOut)
         throw new TypeSafeError(
           "timeout",

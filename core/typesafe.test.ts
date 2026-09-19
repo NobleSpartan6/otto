@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { JevRequestMetric } from "../shared/types.js";
+import type { JevRequestMetric, JevValidationDiagnostic } from "../shared/types.js";
 import {
   createDecider,
   TypeSafeError,
@@ -192,6 +192,115 @@ test("rejects malformed, unsupported, or inconsistent model responses", async (t
     createDecider(async () => Response.json(null))(input),
     hasCode("invalid_response"),
   );
+});
+
+test("every response rejection reports a fixed diagnostic in the error and usage ledger", async t => {
+  const base = validResponse();
+  const action = (changes: Record<string, unknown>) => ({ ...base, answers: { ...base.answers, next_action: { ...base.answers.next_action, ...changes } } });
+  const cases: Array<[JevValidationDiagnostic["code"], unknown]> = [
+    ["response_shape", null],
+    ["model_metadata", { ...base, model: "" }],
+    ["answers_shape", { ...base, answers: [] }],
+    ["usage_shape", { ...base, usage: null }],
+    ["action_shape", action({ type: "noul" })],
+    ["choice_unknown", action({ choice: "unrequested-action" })],
+    ["confidence_range", action({ confidence: 1.0001 })],
+    ["probabilities_shape", action({ probabilities: [] })],
+    ["probability_keys", action({ probabilities: { "click-1": 1 } })],
+    ["probability_range", action({ probabilities: { "click-1": 1.1, stop: -0.1 } })],
+    ["probability_total", action({ probabilities: { "click-1": 0.9, stop: 0.6 } })],
+    ["choice_not_max", action({ choice: "stop" })],
+    ["completion_shape", { ...base, answers: { ...base.answers, complete: { type: "choice", noul: 0.1 } } }],
+    ["completion_range", { ...base, answers: { ...base.answers, complete: { type: "noul", noul: -0.001 } } }],
+    ["input_usage", { ...base, usage: { input_tokens: -1, output_tokens: 42 } }],
+    ["output_usage", { ...base, usage: { input_tokens: 321, output_tokens: 0.5 } }],
+  ];
+  for (const [code, body] of cases) await t.test(code, async () => {
+    const records: JevRequestMetric[] = [];
+    let calls = 0;
+    await assert.rejects(createDecider(async () => { calls++; return Response.json(body); })({ ...input, onRequest: record => records.push(record) }), error => {
+      assert.ok(error instanceof TypeSafeError);
+      assert.equal(error.code, "invalid_response");
+      assert.equal(error.validation?.code, code);
+      assert.equal(error.validation?.candidateCount, 2);
+      assert.match(error.message, /This decision was not executed\.$/);
+      assert.doesNotMatch(error.message, /No action was taken/);
+      assert.deepEqual(records.at(-1)?.validation, error.validation);
+      return true;
+    });
+    assert.equal(calls, 1);
+    assert.equal(records.at(-1)?.outcome, "invalid_response");
+  });
+  await t.test("invalid_json", async () => {
+    const records: JevRequestMetric[] = [];
+    await assert.rejects(createDecider(async () => new Response("not JSON"))({ ...input, onRequest: record => records.push(record) }), error => {
+      assert.ok(error instanceof TypeSafeError);
+      assert.deepEqual(error.validation, { code: "invalid_json", candidateCount: 2 });
+      assert.deepEqual(records.at(-1)?.validation, error.validation);
+      return true;
+    });
+  });
+});
+
+test("diagnostics retain useful numeric evidence but never option IDs, request text, provider text or credentials", async () => {
+  const records: JevRequestMetric[] = [];
+  const body = validResponse();
+  body.answers.next_action.probabilities = { "click-1": 0.9, stop: 0.6 };
+  await assert.rejects(createDecider(async () => Response.json(body))({ ...input, onRequest: record => records.push(record) }), error => {
+    assert.ok(error instanceof TypeSafeError);
+    assert.deepEqual(error.validation, { code: "probability_total", candidateCount: 2, probabilityCount: 2,
+      unknownCandidateCount: 0, missingCandidateCount: 0, probabilityTotal: 1.5, choiceProbability: 0.9, maxProbability: 0.9 });
+    return true;
+  });
+  assert.doesNotMatch(JSON.stringify(records), /click-1|Open the documentation|Documentation|secret-test-key/);
+
+  for (const field of ["unknown_key", "unknown_choice", "model", "invalid_json"] as const) {
+    const secret = "private-provider-text";
+    const local: JevRequestMetric[] = [];
+    const response = validResponse();
+    if (field === "unknown_key") response.answers.next_action.probabilities = { "click-1": 0.9, [`${secret}-${input.apiKey}`]: 0.1 } as typeof response.answers.next_action.probabilities;
+    if (field === "unknown_choice") response.answers.next_action.choice = `${secret}-${input.apiKey}`;
+    if (field === "model") response.model = `${secret}-${input.apiKey}`;
+    await assert.rejects(createDecider(async () => field === "invalid_json" ? new Response(`${secret}-${input.apiKey}`) : Response.json(response))({ ...input, onRequest: record => local.push(record) }), error => {
+      assert.ok(error instanceof TypeSafeError);
+      assert.doesNotMatch(error.message + JSON.stringify(error), /private-provider-text|secret-test-key/);
+      assert.equal(error.cause, undefined);
+      assert.doesNotMatch(JSON.stringify(local), /private-provider-text|secret-test-key/);
+      if (field === "unknown_key") {
+        assert.equal(error.validation?.unknownCandidateCount, 1);
+        assert.equal(error.validation?.missingCandidateCount, 1);
+      }
+      return true;
+    });
+  }
+});
+
+test("invalid probability values have no invented mass, and oversized diagnostic counts disclose caps", async () => {
+  for (const value of [-0.1, 1.1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const response = validResponse(); response.answers.next_action.probabilities.stop = value;
+    await assert.rejects(createDecider(async () => Response.json(response))(input), error => {
+      assert.ok(error instanceof TypeSafeError);
+      assert.equal(error.validation?.code, "probability_range");
+      assert.equal(error.validation?.probabilityTotal, undefined);
+      assert.equal(error.validation?.maxProbability, undefined);
+      assert.equal(error.validation?.choiceProbability, undefined);
+      return true;
+    });
+  }
+  const response = validResponse();
+  response.answers.next_action.probabilities = Object.fromEntries(Array.from({ length: 65_536 }, (_, index) => [`unknown-${index}`, 1])) as typeof response.answers.next_action.probabilities;
+  await assert.rejects(createDecider(async () => Response.json(response))(input), error => {
+    assert.ok(error instanceof TypeSafeError);
+    assert.equal(error.validation?.code, "probability_keys");
+    assert.equal(error.validation?.probabilityCount, 65_535);
+    assert.equal(error.validation?.unknownCandidateCount, 65_535);
+    assert.equal(error.validation?.countsCapped, true);
+    assert.equal(error.validation?.probabilityTotal, 65_535);
+    assert.equal(error.validation?.totalCapped, true);
+    assert.equal(error.validation?.choiceProbability, undefined);
+    assert.ok(JSON.stringify(error.validation).length < 400);
+    return true;
+  });
 });
 
 test("redacts auth error bodies and never retries", async () => {
