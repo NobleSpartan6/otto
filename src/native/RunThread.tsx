@@ -49,6 +49,7 @@ export function RunThread({
   const lastEvent = run.events.at(-1);
   const actions = run.events.filter((event) => event.kind === "action");
   const result = run.error || run.result;
+  const usage = run.metrics?.jev;
   async function exportTrace() {
     setExportError("");
     try {
@@ -167,6 +168,78 @@ export function RunThread({
           Export trace
         </button>
       </div>
+      {run.metrics && (
+        <details className="run-usage">
+          <summary>
+            Model usage
+            <span>
+              {usage?.usageComplete
+                ? "Complete usage reported"
+                : "Reported values only"}
+            </span>
+          </summary>
+          <dl>
+            <div>
+              <dt>TypeSafe reported input tokens</dt>
+              <dd>
+                {(
+                  usage?.reportedInputTokens ?? run.metrics.jevInputTokens
+                ).toLocaleString()}
+              </dd>
+            </div>
+            <div>
+              <dt>TypeSafe total input tokens</dt>
+              <dd>
+                {typeof usage?.inputTokens === "number"
+                  ? usage.inputTokens.toLocaleString()
+                  : "Unknown"}
+              </dd>
+            </div>
+            <div>
+              <dt>TypeSafe request attempts</dt>
+              <dd>
+                {usage ? usage.attemptedRequests.toLocaleString() : "Unknown"}
+              </dd>
+            </div>
+            {usage && (
+              <div>
+                <dt>Requests with unknown usage</dt>
+                <dd>{usage.unknownUsageRequests.toLocaleString()}</dd>
+              </div>
+            )}
+            {usage && usage.untrackedCalls > 0 && (
+              <div>
+                <dt>Calls without request records</dt>
+                <dd>{usage.untrackedCalls.toLocaleString()}</dd>
+              </div>
+            )}
+            {run.mode === "hybrid" && (
+              <>
+                <div>
+                  <dt>OpenAI input tokens</dt>
+                  <dd>
+                    {run.metrics.plannerInputTokens?.toLocaleString() ??
+                      "Unknown"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>OpenAI output tokens</dt>
+                  <dd>
+                    {run.metrics.plannerOutputTokens?.toLocaleString() ??
+                      "Unknown"}
+                  </dd>
+                </div>
+              </>
+            )}
+          </dl>
+          {!usage?.usageComplete && (
+            <p>
+              Some usage may be unreported. Reported input tokens are a
+              subtotal, not a complete usage total.
+            </p>
+          )}
+        </details>
+      )}
       {exportError && (
         <p className="inline-error" role="alert">
           {exportError}

@@ -6,6 +6,7 @@ import {
   ipcMain,
   safeStorage,
   shell,
+  systemPreferences,
   type IpcMainInvokeEvent,
 } from "electron";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -13,6 +14,9 @@ import { dirname, join } from "node:path";
 import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
 import { PlatformDriver } from "./native-driver.js";
 import { OttoEngine } from "../core/engine.js";
+import { BatchEngine } from "../core/batch.js";
+import { VoiceSession } from "./voice.js";
+import type { BatchInput } from "../shared/batch.js";
 import { allowedExternalUrl, assertString } from "./ipc-policy.js";
 import type { StartInput } from "../shared/types.js";
 
@@ -27,6 +31,9 @@ if (!app.isPackaged) {
 let window: BrowserWindow | undefined;
 let driver: PlatformDriver;
 let engine: OttoEngine;
+let batchEngine: BatchEngine;
+let voice: VoiceSession;
+let permissionChanging = false;
 let key = process.env.TYPESAFE_API_KEY ?? "";
 let plannerKey = process.env.OPENAI_API_KEY ?? "";
 const keyFile = () => join(app.getPath("userData"), "typesafe-key.enc");
@@ -64,6 +71,8 @@ async function loadKey() {
 }
 
 function registerIPC() {
+  let discoveryInFlight: ReturnType<PlatformDriver["apps"]> | undefined;
+  let deniedReconnectAt = -Infinity;
   handle("otto:config", () => ({
     desktop: true,
     platform: process.platform,
@@ -73,13 +82,48 @@ function registerIPC() {
     sourceUrl: "https://github.com/NobleSpartan6/otto",
     maxSteps: 20,
   }));
-  handle("otto:apps", () => driver.apps());
-  handle("otto:permissions", (kind: unknown) => {
+  handle("otto:apps", () => {
+    // Focus and permission-watch reads share one probe, so a reconnect cannot
+    // cancel another discovery request. The helper remains the authority.
+    if (discoveryInFlight) return discoveryInFlight;
+    discoveryInFlight = (async () => {
+      let discovery = await driver.apps();
+      // Both processes can retain a denied AX check after a Settings change.
+      // Do not gate a fresh helper on the main process's potentially stale check.
+      const now = Date.now();
+      if (process.platform === "darwin" && !discovery.permissions.accessibility &&
+          !engine.isActive && !batchEngine.isActive && !voice.isActive && !permissionChanging &&
+          now - deniedReconnectAt >= 5_000) {
+        deniedReconnectAt = now;
+        driver.cancel();
+        discovery = await driver.apps();
+      }
+      if (discovery.permissions.accessibility) deniedReconnectAt = -Infinity;
+      return discovery;
+    })().finally(() => { discoveryInFlight = undefined; });
+    return discoveryInFlight;
+  });
+  handle("otto:permissions", async (kind: unknown) => {
     if (kind !== "accessibility" && kind !== "screenCapture")
       throw new Error("Unknown permission.");
-    return driver.requestPermission(kind);
+    if (permissionChanging || engine.isActive || batchEngine.isActive) throw new Error("Stop the current task before changing app permissions.");
+    permissionChanging = true;
+    try {
+      if (process.platform === "darwin") {
+        if (kind === "accessibility") systemPreferences.isTrustedAccessibilityClient(true);
+        else await driver.requestPermission(kind);
+        await shell.openExternal(kind === "accessibility"
+          ? "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+          : "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
+        driver.cancel();
+        return await driver.permissions();
+      }
+      return await driver.requestPermission(kind);
+    } finally { permissionChanging = false; }
   });
   handle("otto:start", async (input: StartInput) => {
+    if (permissionChanging || voice.isActive) throw new Error("Finish dictation or the permission check before starting a task.");
+    if (batchEngine.isActive) throw new Error("Finish or stop the form fill before starting another task.");
     if (
       input?.apiKey !== undefined &&
       (typeof input.apiKey !== "string" || input.apiKey.length > 500)
@@ -162,6 +206,34 @@ function registerIPC() {
   handle("otto:external", (url: unknown) =>
     shell.openExternal(allowedExternalUrl(url)),
   );
+  handle("otto:prepare-fill", (input: BatchInput) => {
+    if (permissionChanging || voice.isActive) throw new Error("Finish dictation or the permission check before preparing a fill.");
+    if (engine.isActive) throw new Error("Stop the current task before preparing a form fill.");
+    return batchEngine.prepare(input);
+  });
+  handle("otto:batch", (id: unknown) => { assertString(id); return batchEngine.get(id); });
+  handle("otto:approve-fill", (id: unknown, approvalId: unknown) => {
+    assertString(id); assertString(approvalId);
+    if (engine.isActive) throw new Error("Stop the current task before filling a form.");
+    return batchEngine.approve(id, approvalId);
+  });
+  handle("otto:stop-fill", (id: unknown) => { assertString(id); return batchEngine.stop(id); });
+  handle("otto:export-fill", async (id: unknown) => {
+    assertString(id);
+    const receipt = batchEngine.get(id);
+    const { canceled, filePath } = await dialog.showSaveDialog(window!, {
+      defaultPath: `otto-fill-${id}.json`, filters: [{ name: "JSON receipt", extensions: ["json"] }],
+    });
+    if (canceled || !filePath) return false;
+    await writeFile(filePath, JSON.stringify(receipt, null, 2), { mode: 0o600 });
+    return true;
+  });
+  handle("otto:voice-start", () => {
+    if (engine.isActive || batchEngine.isActive) throw new Error("Finish or stop the current task before dictating another.");
+    return voice.start();
+  });
+  handle("otto:voice-stop", () => voice.stop());
+  handle("otto:voice-cancel", () => voice.cancel());
 }
 
 void app
@@ -172,6 +244,10 @@ void app
       app.isPackaged,
     );
     engine = new OttoEngine(driver);
+    batchEngine = new BatchEngine(driver);
+    voice = new VoiceSession(app.isPackaged ? process.resourcesPath : root, app.isPackaged, {
+      onEnd: (event) => { if (window && !window.isDestroyed()) window.webContents.send("otto:voice-ended", event); },
+    });
     await loadKey();
     registerIPC();
     window = new BrowserWindow({
@@ -210,6 +286,8 @@ void app
     if (
       !globalShortcut.register(shortcut, () => {
         engine.stopAll();
+        batchEngine.stopAll();
+        voice.cancel();
         window?.show();
       })
     ) {
@@ -222,6 +300,8 @@ void app
     }
     window.on("closed", () => {
       engine.stopAll();
+      batchEngine.stopAll();
+      voice.cancel();
       window = undefined;
     });
   })
@@ -235,6 +315,8 @@ void app
 app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => {
   engine?.stopAll();
+  batchEngine?.stopAll();
+  voice?.cancel();
   driver?.cancel();
   key = "";
   plannerKey = "";

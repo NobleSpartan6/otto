@@ -10,6 +10,8 @@ export interface Permissions {
 }
 export interface NativeControl {
   id: string;
+  /** Helper-owned identity retained only while this exact native element survives. */
+  identity?: string;
   role: string;
   label: string;
   value?: string;
@@ -27,6 +29,10 @@ export interface NativeSnapshot {
   text: string;
   controls: NativeControl[];
   capturedAt: string;
+  /** Helper-issued identity for the exact window, stable across fresh observations. */
+  windowToken?: string;
+  /** Opaque identity for a native document attribute, when the app exposes one. */
+  documentToken?: string;
   screenshot?: string;
   windowBounds?: { x: number; y: number; width: number; height: number };
   screenshotSize?: { width: number; height: number };
@@ -67,6 +73,20 @@ export type RunStatus =
   | "failed"
   | "limit_reached"
   | "blocked";
+export interface JevRequestMetric {
+  id: string;
+  requestedModel: string;
+  model: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  outcome: "pending" | "succeeded" | "http_error" | "invalid_response" | "cancelled" | "timeout" | "network_error";
+  responseReceived: boolean;
+  httpStatus: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  /** Client-observed request elapsed time, including failed requests; not model inference time. */
+  latencyMs: number | null;
+}
 export interface OttoRun {
   id: string;
   goal: string;
@@ -79,10 +99,26 @@ export interface OttoRun {
   decisionCalls?: number;
   /** Measured responses only; failed/cancelled requests may have unreported usage. */
   metrics?: {
+    /** Subtotal of reported input usage; use jev.inputTokens for a complete total. */
     jevInputTokens: number;
     plannerInputTokens: number | null;
     plannerOutputTokens: number | null;
     modelLatencyMs: number;
+    jev?: {
+      attemptedRequests: number;
+      receivedResponses: number;
+      unknownUsageRequests: number;
+      /** Custom decider invocations that did not report request lifecycle telemetry. */
+      untrackedCalls: number;
+      reportedInputTokens: number;
+      reportedOutputTokens: number;
+      /** Null if any attempt is pending or did not report the corresponding counter. */
+      inputTokens: number | null;
+      outputTokens: number | null;
+      usageComplete: boolean;
+      requestLatencyMs: number;
+      requests: JevRequestMetric[];
+    };
   };
   maxSteps: number;
   createdAt: string;
@@ -133,6 +169,15 @@ export interface OttoAPI {
   clearPlannerKey(): Promise<void>;
   exportRun(id: string): Promise<boolean>;
   openExternal(url: string): Promise<void>;
+  prepareFill(input: import("./batch.js").BatchInput): Promise<import("./batch.js").BatchRun>;
+  batch(id: string): Promise<import("./batch.js").BatchRun>;
+  approveFill(id: string, approvalId: string): Promise<import("./batch.js").BatchRun>;
+  stopFill(id: string): Promise<import("./batch.js").BatchRun>;
+  exportFill(id: string): Promise<boolean>;
+  voiceStart(): Promise<{ status: "listening" | "unavailable"; message?: string }>;
+  voiceStop(): Promise<{ text: string }>;
+  voiceCancel(): Promise<void>;
+  onVoiceEnded?(listener: (event: { cancelled: boolean }) => void): () => void;
 }
 export interface NativeDriver {
   apps(): Promise<{ apps: DesktopApp[]; permissions: Permissions }>;

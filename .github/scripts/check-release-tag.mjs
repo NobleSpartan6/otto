@@ -7,5 +7,5 @@ const tagged = execFileSync('git', ['rev-parse', '--verify', `refs/tags/${tag}^{
 const head = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 if (tagged !== head) throw new Error('Checkout does not match the requested release tag.');
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
-if (tag.slice(1).split('-')[0] !== version.split('-')[0]) throw new Error('The tag version must match package.json.');
+if (tag.slice(1) !== version) throw new Error('The tag version must exactly match package.json, including its prerelease suffix.');
 console.log(`Validated ${tag} at ${head}.`);

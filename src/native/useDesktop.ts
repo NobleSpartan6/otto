@@ -7,6 +7,9 @@ import {
   type Permissions,
 } from "../api";
 
+type AppDiscovery = { apps: DesktopApp[]; permissions: Permissions };
+type PermissionKind = "accessibility" | "screenCapture";
+
 export function useDesktop() {
   const [config, setConfigValue] = useState<OttoConfig | null>(null);
   const [apps, setApps] = useState<DesktopApp[]>([]);
@@ -14,6 +17,8 @@ export function useDesktop() {
   const [configLoading, setConfigLoading] = useState(true);
   const [appsLoading, setAppsLoading] = useState(true);
   const [permissionLoading, setPermissionLoading] = useState(false);
+  const [waitingPermission, setWaitingPermission] =
+    useState<PermissionKind | null>(null);
   const [appsError, setAppsError] = useState("");
   const [configError, setConfigError] = useState("");
   const mounted = useRef(true);
@@ -21,21 +26,36 @@ export function useDesktop() {
   const appsGeneration = useRef(0);
   const permissionsGeneration = useRef(0);
   const permissionPending = useRef(false);
+  const discovery = useRef<Promise<AppDiscovery | undefined> | null>(null);
+  const permissionWatch = useRef<{
+    kind: PermissionKind;
+    deadline: number;
+    timer?: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   useEffect(() => {
     mounted.current = true;
     void refreshSettings();
     void refreshApps();
+    const refreshOnReturn = () => {
+      if (document.visibilityState === "visible") void refreshApps(true);
+    };
+    window.addEventListener("focus", refreshOnReturn);
+    document.addEventListener("visibilitychange", refreshOnReturn);
     return () => {
       mounted.current = false;
       configGeneration.current++;
       appsGeneration.current++;
       permissionsGeneration.current++;
       permissionPending.current = false;
+      discovery.current = null;
+      clearTimeout(permissionWatch.current?.timer);
+      permissionWatch.current = null;
+      window.removeEventListener("focus", refreshOnReturn);
+      document.removeEventListener("visibilitychange", refreshOnReturn);
     };
   }, []);
 
-  // A provider save is newer than every settings read already in flight.
   function setConfig(next: SetStateAction<OttoConfig | null>) {
     if (!mounted.current) return;
     configGeneration.current++;
@@ -44,31 +64,74 @@ export function useDesktop() {
     setConfigLoading(false);
   }
 
-  async function refreshApps() {
+  function finishPermissionWatch() {
+    clearTimeout(permissionWatch.current?.timer);
+    permissionWatch.current = null;
+    if (mounted.current) setWaitingPermission(null);
+  }
+
+  function refreshApps(quiet = false): Promise<AppDiscovery | undefined> {
+    // Returning from System Settings often emits focus and visibility together.
+    // Share their read instead of superseding and starving one another.
+    if (discovery.current) return discovery.current;
     const generation = ++appsGeneration.current;
     const permissionsAtStart = permissionsGeneration.current;
-    setAppsLoading(true);
-    setAppsError("");
-    try {
-      const next = await nativeAPI().apps();
-      if (!mounted.current || generation !== appsGeneration.current) return;
-      setApps(next.apps);
-      // App discovery may have captured permissions before a grant completed.
-      if (
-        !permissionPending.current &&
-        permissionsAtStart === permissionsGeneration.current
-      )
-        setPermissions(next.permissions);
-      return next;
-    } catch (cause) {
-      if (mounted.current && generation === appsGeneration.current)
-        setAppsError(
-          errorMessage(cause, "Otto could not refresh your open apps."),
-        );
-    } finally {
-      if (mounted.current && generation === appsGeneration.current)
-        setAppsLoading(false);
+    if (!quiet) {
+      setAppsLoading(true);
+      setAppsError("");
     }
+    const request = (async () => {
+      try {
+        const next = await nativeAPI().apps();
+        if (!mounted.current || generation !== appsGeneration.current) return;
+        setApps(next.apps);
+        setAppsError("");
+        if (
+          !permissionPending.current &&
+          permissionsAtStart === permissionsGeneration.current
+        ) {
+          setPermissions(next.permissions);
+          const watch = permissionWatch.current;
+          if (watch && next.permissions[watch.kind]) finishPermissionWatch();
+        }
+        return next;
+      } catch (cause) {
+        if (!quiet && mounted.current && generation === appsGeneration.current)
+          setAppsError(
+            errorMessage(cause, "Otto could not refresh your open apps."),
+          );
+      } finally {
+        if (mounted.current && generation === appsGeneration.current)
+          setAppsLoading(false);
+      }
+    })();
+    discovery.current = request;
+    void request.finally(() => {
+      if (discovery.current === request) discovery.current = null;
+    });
+    return request;
+  }
+
+  function watchPermission(kind: PermissionKind) {
+    finishPermissionWatch();
+    const watch = {
+      kind,
+      deadline: Date.now() + 60_000,
+      timer: undefined as ReturnType<typeof setTimeout> | undefined,
+    };
+    permissionWatch.current = watch;
+    setWaitingPermission(kind);
+    const check = async () => {
+      if (!mounted.current || permissionWatch.current !== watch) return;
+      if (Date.now() >= watch.deadline) {
+        finishPermissionWatch();
+        return;
+      }
+      await refreshApps(true);
+      if (mounted.current && permissionWatch.current === watch)
+        watch.timer = setTimeout(check, 1500);
+    };
+    watch.timer = setTimeout(check, 1500);
   }
 
   async function refreshSettings() {
@@ -94,26 +157,34 @@ export function useDesktop() {
     await Promise.allSettled([refreshSettings(), refreshApps()]);
   }
 
-  async function requestPermission(kind: "accessibility" | "screenCapture") {
+  async function requestPermission(kind: PermissionKind) {
+    if (permissionPending.current) return;
+    finishPermissionWatch();
     const generation = ++permissionsGeneration.current;
     permissionPending.current = true;
     setAppsError("");
     setPermissionLoading(true);
+    let granted = false;
     try {
       const next = await nativeAPI().permissions(kind);
-      if (mounted.current && generation === permissionsGeneration.current)
+      if (mounted.current && generation === permissionsGeneration.current) {
         setPermissions(next);
+        granted = next[kind];
+      }
     } catch (cause) {
       if (mounted.current && generation === permissionsGeneration.current)
         setAppsError(
-          errorMessage(cause, "Otto could not open system permissions."),
+          errorMessage(
+            cause,
+            "Otto could not open system permissions. Open System Settings and allow this app, then return to Otto.",
+          ),
         );
     } finally {
       if (mounted.current && generation === permissionsGeneration.current) {
-        // Also invalidate discovery started while the system prompt was open.
         permissionsGeneration.current++;
         permissionPending.current = false;
         setPermissionLoading(false);
+        if (!granted) watchPermission(kind);
       }
     }
   }
@@ -125,6 +196,7 @@ export function useDesktop() {
     apps,
     permissions,
     loading,
+    waitingPermission,
     appsError,
     configError,
     refreshApps,

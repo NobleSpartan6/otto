@@ -1438,3 +1438,11 @@
   display: block;
   margin-top: 7px;
 }
+.run-usage { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+.run-usage > summary { cursor: pointer; line-height: 1.6; }
+.run-usage > summary > span { display: block; padding-left: 12px; font-size: 10px; }
+.run-usage dl { margin: 14px 0; }
+.run-usage dl > div { display: flex; justify-content: space-between; gap: 12px; line-height: 1.7; margin-bottom: 7px; }
+.run-usage dt { max-width: 70%; }
+.run-usage dd { margin: 0; color: var(--ink); }
+.run-usage p { line-height: 1.7; margin: 10px 0 0; }

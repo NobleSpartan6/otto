@@ -7,6 +7,7 @@ import {
   Copy,
   KeyRound,
   MousePointer2,
+  Mic,
   ShieldCheck,
 } from "lucide-react";
 import { ExternalLink } from "../components/ExternalLink";
@@ -72,7 +73,7 @@ export function PublicLanding() {
             </ExternalLink>
           </div>
           <p className="release-note">
-            Unsigned test builds. Read the release notes before installing.
+            Alpha builds without publisher signing. Read the release notes before installing.
           </p>
           <div className="public-principles">
             <div>
@@ -80,6 +81,20 @@ export function PublicLanding() {
               <span>
                 <strong>Always your call.</strong>
                 <p>See the next action before it runs. Stop any time.</p>
+              </span>
+            </div>
+            <div>
+              <Check size={18} />
+              <span>
+                <strong>Review once. Verify every field.</strong>
+                <p>Apply exact native form values with one review and no model calls during the fill.</p>
+              </span>
+            </div>
+            <div>
+              <Mic size={18} />
+              <span>
+                <strong>Say what you need.</strong>
+                <p>Optional native dictation turns speech into an editable task. You decide when to start.</p>
               </span>
             </div>
             <div>
@@ -126,7 +141,7 @@ export function PublicLanding() {
       </main>
       <footer className="public-footer">
         <span>
-          Actions powered by{" "}
+          Guided decisions powered by{" "}
           <ExternalLink href="https://docs.typesafe.ai/introduction">
             TypeSafe Jev
           </ExternalLink>

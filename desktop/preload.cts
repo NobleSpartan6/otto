@@ -18,5 +18,18 @@ const api: OttoAPI = {
   clearPlannerKey: () => ipcRenderer.invoke("otto:clear-planner-key"),
   exportRun: (id) => ipcRenderer.invoke("otto:export", id),
   openExternal: (url) => ipcRenderer.invoke("otto:external", url),
+  prepareFill: (input) => ipcRenderer.invoke("otto:prepare-fill", input),
+  batch: (id) => ipcRenderer.invoke("otto:batch", id),
+  approveFill: (id, approvalId) => ipcRenderer.invoke("otto:approve-fill", id, approvalId),
+  stopFill: (id) => ipcRenderer.invoke("otto:stop-fill", id),
+  exportFill: (id) => ipcRenderer.invoke("otto:export-fill", id),
+  voiceStart: () => ipcRenderer.invoke("otto:voice-start"),
+  voiceStop: () => ipcRenderer.invoke("otto:voice-stop"),
+  voiceCancel: () => ipcRenderer.invoke("otto:voice-cancel"),
+  onVoiceEnded: (listener) => {
+    const receive = (_event: Electron.IpcRendererEvent, value: { cancelled: boolean }) => listener({ cancelled: value.cancelled === true });
+    ipcRenderer.on("otto:voice-ended", receive);
+    return () => ipcRenderer.removeListener("otto:voice-ended", receive);
+  },
 };
 contextBridge.exposeInMainWorld("otto", Object.freeze(api));

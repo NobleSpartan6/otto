@@ -72,7 +72,17 @@ export function AppPicker({
       </div>
       {permissions && !permissions.accessibility && (
         <div className="permission-callout">
-          <p>Allow Accessibility so Otto can read and use app controls.</p>
+          <p>
+            Allow Accessibility so Otto can read and use app controls. In System
+            Settings, enable this app, then return here. Otto checks again
+            automatically.
+          </p>
+          {permissions.platform === "darwin" && (
+            <p>
+              After an alpha update, if Otto is already enabled, remove its old
+              Accessibility entry and add /Applications/Otto.app again.
+            </p>
+          )}
           <button
             className="text-button"
             onClick={onPermission}

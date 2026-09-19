@@ -83,7 +83,8 @@ export function ProviderDialog({
       className="provider-dialog"
     >
       <p className="dialog-description">
-        Bring your own API key. TypeSafe is all you need to get started.
+        TypeSafe powers guided tasks. Form fills and dictation don’t need an API
+        key.
       </p>
       <form onSubmit={save} className="provider-form">
         <div className="provider-label">

@@ -14,7 +14,17 @@ const sums = assets.map(file => `${createHash('sha256').update(readFileSync(join
 const checksumFile = join(directory, 'SHA256SUMS.txt');
 writeFileSync(checksumFile, sums);
 const notesFile = join(directory, 'alpha-notes.md');
-writeFileSync(notesFile, `Unsigned alpha build for early testing.\n\n- macOS: Apple Silicon (arm64) and Intel (x64); no Developer ID signing or notarization.\n- Windows: x64 installer; no publisher signing certificate.\n- Supply your own TypeSafe key. Hybrid mode also needs your own OpenAI Platform key.\n- CI checks unit tests, compilation, and the read-only native protocol. It does not establish full desktop automation compatibility.\n- See the repository README for setup, permissions, and known limitations. SHA256SUMS.txt contains asset checksums.\n`);
+writeFileSync(notesFile, `Early alpha for macOS and Windows.
+
+- **Fill a form:** review exact text edits once, then verify every field through native readback. No model calls or provider key. The app may autosave; Otto issues no Submit action.
+- **Task dictation:** optional native speech-to-text drafts your task. It never starts a task or approves an action. On-device recognition availability varies.
+- **Guided tasks:** bring your TypeSafe key; Hybrid mode also requires an OpenAI Platform key.
+- **macOS:** Apple Silicon and Intel. Ad-hoc bundle integrity is checked in CI; no Developer ID or notarization. After an update, an enabled Accessibility entry can still reference the old build. Remove the old Otto entry and add the installed /Applications/Otto.app again if access remains unavailable.
+- **Windows:** x64 installer, without publisher signing.
+- CI checks tests, compilation, and the read-only native protocol. It does not establish broad app compatibility or end-to-end voice recognition. See the repository validation notes for the measured scope.
+
+See the README for setup and limitations. SHA256SUMS.txt contains asset checksums.
+`);
 const existing = spawnSync('gh', ['release', 'view', tag, '--repo', repository, '--json', 'isPrerelease'], { encoding: 'utf8' });
 if (existing.status === 0) {
   if (!JSON.parse(existing.stdout).isPrerelease) throw new Error('Refusing to replace assets on a non-prerelease release.');

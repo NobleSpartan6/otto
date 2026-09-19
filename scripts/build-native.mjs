@@ -9,7 +9,12 @@ if (process.platform === 'darwin') {
   const result = spawnSync('xcrun', ['swiftc', '-swift-version', '6', '-strict-concurrency=complete', '-parse-as-library', '-O',
     '-target', target, 'desktop/native/macos/OttoAX.swift', '-o', 'desktop/native/macos/otto-ax',
     '-framework', 'AppKit', '-framework', 'ApplicationServices'], { stdio: 'inherit', env });
-  process.exit(result.status ?? 1);
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  const voice = spawnSync('xcrun', ['swiftc', '-swift-version', '6', '-strict-concurrency=complete', '-parse-as-library', '-O',
+    '-target', target, 'desktop/native/macos/OttoVoice.swift', '-o', 'desktop/native/macos/otto-voice',
+    '-framework', 'AVFoundation', '-framework', 'Speech', '-Xlinker', '-sectcreate', '-Xlinker', '__TEXT', '-Xlinker', '__info_plist',
+    '-Xlinker', 'desktop/native/macos/voice-info.plist'], { stdio: 'inherit', env });
+  process.exit(voice.status ?? 1);
 } else if (process.platform !== 'win32') {
   console.log('Native computer control is available on macOS and Windows. Building the distribution website only.');
 }

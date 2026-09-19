@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { JevRequestMetric } from "../shared/types.js";
 import {
   createDecider,
   TypeSafeError,
@@ -74,6 +75,8 @@ test("sends documented native questions and returns a validated decision", async
   assert.equal(result.probabilities["click-1"], 0.9);
   assert.equal(result.complete, 0.02);
   assert.equal(result.inputTokens, 321);
+  assert.equal(result.outputTokens, 42);
+  assert.equal(result.model, "jev-latest");
   assert.ok(Number.isFinite(result.latencyMs) && result.latencyMs >= 0);
 });
 
@@ -289,4 +292,87 @@ test("rejects duplicate candidates before calling the provider", async () => {
     hasCode("invalid_input"),
   );
   assert.equal(calls, 0);
+});
+
+test("request ledger preserves actual model and both usage counters without request data", async () => {
+  const records: JevRequestMetric[] = [];
+  const response = { ...validResponse(), model: "jev-fixture-2026-09" };
+  const result = await createDecider(async () => Response.json(response))({ ...input, onRequest: record => records.push(record) });
+  assert.equal(result.model, response.model);
+  assert.equal(records.length, 3);
+  assert.equal(records[0]!.outcome, "pending");
+  assert.equal(records[0]!.responseReceived, false);
+  assert.equal(records[1]!.responseReceived, true);
+  const final = records.at(-1)!;
+  assert.equal(final.outcome, "succeeded");
+  assert.equal(final.model, response.model);
+  assert.equal(final.inputTokens, 321);
+  assert.equal(final.outputTokens, 42);
+  assert.equal(final.httpStatus, 200);
+  assert.ok(final.completedAt && final.latencyMs !== null);
+  assert.equal(new Set(records.map(record => record.id)).size, 1);
+  assert.doesNotMatch(JSON.stringify(records), /secret-test-key|Open the documentation|Authorization/);
+});
+
+test("invalid decisions retain reported usage; malformed counters remain unknown", async () => {
+  for (const outputTokens of [42, undefined, -1]) {
+    const records: JevRequestMetric[] = [];
+    const response = validResponse();
+    response.answers.next_action.choice = "not-a-candidate";
+    const body = { ...response, usage: { input_tokens: 321, output_tokens: outputTokens } };
+    await assert.rejects(createDecider(async () => Response.json(body))({ ...input, onRequest: record => records.push(record) }), hasCode("invalid_response"));
+    assert.equal(records.at(-1)!.outcome, "invalid_response");
+    assert.equal(records.at(-1)!.responseReceived, true);
+    assert.equal(records.at(-1)!.inputTokens, 321);
+    assert.equal(records.at(-1)!.outputTokens, outputTokens === 42 ? 42 : null);
+  }
+});
+
+test("HTTP/network failures and cancellation report unknown usage, never zero", async () => {
+  for (const kind of ["http", "network", "cancel"] as const) {
+    const records: JevRequestMetric[] = [];
+    const controller = new AbortController();
+    const fetcher: typeof fetch = async (_url, options) => {
+      if (kind === "http") return new Response(input.apiKey, { status: 429 });
+      if (kind === "network") throw new Error(input.apiKey);
+      return new Promise<Response>((_resolve, reject) => {
+        options?.signal?.addEventListener("abort", () => reject(new Error(input.apiKey)), { once: true });
+      });
+    };
+    const pending = createDecider(fetcher)({ ...input, signal: controller.signal, onRequest: record => records.push(record) });
+    if (kind === "cancel") controller.abort();
+    await assert.rejects(pending, hasCode(kind === "http" ? "http_error" : kind === "network" ? "network_error" : "cancelled"));
+    const final = records.at(-1)!;
+    assert.equal(final.responseReceived, kind === "http");
+    assert.equal(final.inputTokens, null);
+    assert.equal(final.outputTokens, null);
+    assert.equal(final.model, null);
+    assert.ok(final.completedAt && final.latencyMs !== null);
+    assert.ok(!JSON.stringify(records).includes(input.apiKey));
+  }
+  const controller = new AbortController(); controller.abort();
+  const records: JevRequestMetric[] = [];
+  await assert.rejects(createDecider(async () => { throw new Error("Must not send"); })({ ...input, signal: controller.signal, onRequest: record => records.push(record) }), hasCode("cancelled"));
+  assert.equal(records.length, 0);
+});
+
+test("timeout remains an attempted request with unknown provider usage", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const records: JevRequestMetric[] = [];
+  const decide = createDecider(async (_url, options) => new Promise<Response>((_resolve, reject) => {
+    options?.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+  }));
+  const pending = assert.rejects(decide({ ...input, onRequest: record => records.push(record) }), hasCode("timeout"));
+  t.mock.timers.tick(15_000);
+  await pending;
+  assert.equal(records.at(-1)!.outcome, "timeout");
+  assert.equal(records.at(-1)!.inputTokens, null);
+  assert.equal(records.at(-1)!.outputTokens, null);
+});
+
+test("provider model metadata cannot echo the credential into the ledger", async () => {
+  const records: JevRequestMetric[] = [];
+  await assert.rejects(createDecider(async () => Response.json({ ...validResponse(), model: input.apiKey }))({ ...input, onRequest: record => records.push(record) }), hasCode("invalid_response"));
+  assert.equal(records.at(-1)!.model, null);
+  assert.ok(!JSON.stringify(records).includes(input.apiKey));
 });

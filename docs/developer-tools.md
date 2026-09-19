@@ -2,7 +2,7 @@
 
 Otto's local MCP server lets a coding agent inspect explicitly selected desktop apps as bounded text with short control references, then prepare literal values for native editable fields. It requires no TypeSafe or other provider key. The host agent still uses its own model and account.
 
-This version prepares a plan only. It does not execute clicks, fill fields, submit forms, request permissions, or import the plan into Electron's approval flow. Preparation is useful for inspecting native interfaces and reviewing field mappings; it does not yet reduce action round trips.
+The MCP interface prepares a plan only. It does not execute clicks, fill fields, submit forms, request permissions, or import the plan into Electron's approval flow. For exact native text edits, the desktop app now provides a separate [reviewed form-fill workflow](verified-fills.md): paste the literal field map, review it locally, then explicitly approve. MCP preparation never supplies that approval.
 
 ## Start from a source build
 
@@ -100,7 +100,7 @@ UTF-8 byte counts and tokenizer counts are exact for the serialized strings and 
 
 ## What the Cua-S1 thread establishes
 
-The [five-post announcement](https://x.com/trycua/status/2101014004927729737) describes a narrow form specialist: choose document values and fixed actions in one batch, then let deterministic code order and validate execution. That is a useful direction for future delegation; this Otto version implements context and preparation only.
+The [five-post announcement](https://x.com/trycua/status/2101014004927729737) describes a narrow form specialist: choose document values and fixed actions in one batch, then let deterministic code order and validate execution. Otto's MCP interface implements context and preparation only. The separate desktop [reviewed fill workflow](verified-fills.md) applies supplied literal values after human review, with fresh native target checks and readback; it does not include a learned form specialist or accept execution approval from MCP.
 
 The [published model card at revision 4171435](https://huggingface.co/cua-ai/cua-s1-forms/blob/4171435d90e7fd78d6d3f0e78b1c4e4cca896706/README.md) describes a 706,048-parameter byte transformer with an option-attention head. It reports 99.95% synthetic decision accuracy and 100% on 196 decisions from three demo forms. These are author-reported choice accuracies, not independently reproduced end-to-end task success or token/cost measurements. Its hosted-Jev comparison also mixes learned no-op conventions with action judgments. The [MIT dataset card at revision 8273f34](https://huggingface.co/datasets/cua-ai/cua-s1-forms/blob/8273f34778b99ac2e12d9f6e7d57dad99ae20845/README.md) describes synthetic form-signature splits and a small demo evaluation.
 

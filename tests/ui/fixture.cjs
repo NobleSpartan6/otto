@@ -9,6 +9,12 @@ const profile = mkdtempSync(join(tmpdir(), "otto-ui-qa-"));
 app.setPath("userData", profile);
 let scenario = "ready";
 let run = null;
+let batchRun = null;
+let fixtureEpoch = 0;
+let voiceListening = false;
+let voiceEpoch = 0;
+let voiceCachedText = "";
+let fixturePermissionsGranted = false;
 let window;
 let configured = true;
 let plannerConfigured = false;
@@ -144,16 +150,25 @@ handle("apps", async () => {
     apps: scenario === "empty" ? [] : apps,
     permissions: {
       platform: process.platform,
-      accessibility: scenario !== "permissions",
+      accessibility:
+        !["permissions", "permissionReturn"].includes(scenario) ||
+        fixturePermissionsGranted,
       screenCapture: false,
     },
   };
 });
-handle("permissions", async () => ({
-  platform: process.platform,
-  accessibility: true,
-  screenCapture: false,
-}));
+handle("permissions", async () => {
+  if (scenario === "permissionReturn")
+    schedule(2200, () => {
+      fixturePermissionsGranted = true;
+    });
+  else fixturePermissionsGranted = true;
+  return {
+    platform: process.platform,
+    accessibility: fixturePermissionsGranted,
+    screenCapture: false,
+  };
+});
 handle("start", async (input) => {
   await delay(650);
   if (scenario === "start-error")
@@ -208,14 +223,179 @@ handle("clear-planner-key", () => {
 });
 handle("export", () => true);
 handle("external", () => undefined);
+
+// Batch and speech are isolated UI responses. They never invoke a native helper.
+function schedule(ms, callback) {
+  const epoch = fixtureEpoch;
+  setTimeout(() => {
+    if (epoch === fixtureEpoch) callback();
+  }, ms);
+}
+handle("prepare-fill", async (input) => {
+  batchRun = {
+    id: "fixture-batch",
+    kind: "exact_fill",
+    status: "preparing",
+    appId: input.appId,
+    app: apps.find((item) => item.id === input.appId),
+    windowTitle: "Contact form — QA fixture",
+    createdAt: new Date().toISOString(),
+    fields: Object.entries(input.fields).map(([label, proposed], index) => ({
+      label,
+      before: index === 0 ? proposed : "Previous value",
+      proposed,
+      status: "pending",
+    })),
+    metrics: { observations: 0, nativeActions: 0, modelCalls: 0 },
+  };
+  if (scenario !== "batchPreparing")
+    schedule(700, () => {
+      if (batchRun?.status !== "preparing") return;
+      batchRun.status = "awaiting_approval";
+      batchRun.approvalId = "fixture-fill-approval";
+      batchRun.expiresAt = new Date(Date.now() + 300_000).toISOString();
+      batchRun.metrics.observations = 1;
+      if (scenario === "batchExpired")
+        schedule(6000, () => {
+          if (batchRun?.status !== "awaiting_approval") return;
+          batchRun.status = "expired";
+          delete batchRun.approvalId;
+          batchRun.result =
+            "The reviewed fill expired. Prepare a fresh review. No fields were changed.";
+          batchRun.fields.forEach((field) => {
+            field.status = "skipped";
+            field.error = "Not executed.";
+          });
+        });
+    });
+  return batchRun;
+});
+handle("batch", () => batchRun);
+handle("approve-fill", async (_id, approvalId) => {
+  if (
+    !batchRun ||
+    batchRun.status !== "awaiting_approval" ||
+    approvalId !== batchRun.approvalId
+  )
+    throw new Error("This fixture approval is no longer available.");
+  await delay(500);
+  batchRun.status = "running";
+  delete batchRun.approvalId;
+  const fillNext = (index) => {
+    if (!batchRun || batchRun.status !== "running") return;
+    const field = batchRun.fields[index];
+    if (!field) {
+      batchRun.status = "completed";
+      batchRun.verification = "native_readback";
+      batchRun.metrics.observations++;
+      batchRun.result =
+        "All requested values match the fixture readback. No submit action was issued.";
+      return;
+    }
+    batchRun.metrics.observations++;
+    if (
+      scenario === "batchMismatch" &&
+      index === Math.min(1, batchRun.fields.length - 1)
+    ) {
+      field.status = "failed";
+      field.after = "Unexpected fixture value";
+      field.error = "The native readback did not match the approved text.";
+      batchRun.metrics.nativeActions++;
+      batchRun.status = "failed";
+      batchRun.error =
+        "A field did not match. Remaining fields were not filled.";
+      batchRun.fields.slice(index + 1).forEach((item) => {
+        item.status = "skipped";
+        item.error = "Not executed.";
+      });
+      return;
+    }
+    field.after = field.proposed;
+    field.status = field.before === field.proposed ? "skipped" : "verified";
+    if (field.status === "verified") batchRun.metrics.nativeActions++;
+    schedule(650, () => fillNext(index + 1));
+  };
+  schedule(650, () => fillNext(0));
+  return batchRun;
+});
+handle("stop-fill", () => {
+  if (
+    batchRun &&
+    ["preparing", "awaiting_approval", "running"].includes(batchRun.status)
+  ) {
+    batchRun.status = "stopped";
+    delete batchRun.approvalId;
+    batchRun.result = "Fill stopped. Review any earlier field results.";
+    batchRun.fields.forEach((field) => {
+      if (field.status === "pending") {
+        field.status = "skipped";
+        field.error = "Not executed.";
+      }
+    });
+  }
+  return batchRun;
+});
+handle("export-fill", () => true);
+function voiceEnded(cancelled) {
+  if (window && !window.isDestroyed())
+    window.webContents.send("otto:voice-ended", { cancelled });
+}
+function simulateVoiceFinish() {
+  if (!voiceListening) return;
+  voiceListening = false;
+  voiceCachedText = "Add a short note to the current document.";
+  voiceEnded(false);
+}
+function simulateVoiceCancel() {
+  voiceEpoch++;
+  voiceListening = false;
+  voiceCachedText = "";
+  voiceEnded(true);
+}
+handle("voice-start", async () => {
+  const revision = ++voiceEpoch;
+  await delay(300);
+  if (revision !== voiceEpoch)
+    return { status: "unavailable", message: "Cancelled." };
+  if (scenario !== "voiceListening")
+    return {
+      status: "unavailable",
+      message:
+        "Dictation is unavailable in this fixture scenario. Your typed text is preserved. Choose voiceListening to test transcript insertion.",
+    };
+  voiceListening = true;
+  voiceCachedText = "";
+  return { status: "listening" };
+});
+handle("voice-stop", async () => {
+  const revision = voiceEpoch;
+  await delay(450);
+  if (revision !== voiceEpoch) return { text: "" };
+  const text =
+    voiceCachedText ||
+    (voiceListening ? "Add a short note to the current document." : "");
+  voiceListening = false;
+  voiceCachedText = "";
+  voiceEnded(false);
+  return { text };
+});
+handle("voice-cancel", simulateVoiceCancel);
+
 function setScenario(value) {
   scenario = value;
+  fixtureEpoch++;
+  voiceEpoch++;
   run = null;
+  batchRun = null;
+  voiceListening = false;
+  voiceCachedText = "";
+  fixturePermissionsGranted = false;
   configured = value !== "onboarding" && value !== "late-apps";
   plannerConfigured = false;
   window.reload();
 }
 void app.whenReady().then(async () => {
+  app.setAccessibilitySupportEnabled(true);
   window = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -293,7 +473,24 @@ void app.whenReady().then(async () => {
           "blocked",
           "poll-error",
           "long-approval",
+          "permissionReturn",
+          "batchSuccess",
+          "batchMismatch",
+          "batchPreparing",
+          "batchExpired",
+          "voiceUnavailable",
+          "voiceListening",
         ].map((value) => ({ label: value, click: () => setScenario(value) })),
+      },
+      {
+        label: "Voice events",
+        submenu: [
+          { label: "Simulate natural completion", click: simulateVoiceFinish },
+          {
+            label: "Simulate emergency cancellation",
+            click: simulateVoiceCancel,
+          },
+        ],
       },
       {
         label: "Window size",

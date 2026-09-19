@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>ai.otto.voice</string>
+  <key>CFBundleName</key><string>Otto</string>
+  <key>NSMicrophoneUsageDescription</key><string>Otto listens only when you start dictation, to draft a task for your review.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>Otto uses on-device speech recognition to draft your task. Audio is not saved.</string>
+</dict></plist>

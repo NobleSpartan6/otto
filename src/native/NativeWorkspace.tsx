@@ -6,6 +6,7 @@ import {
   ChevronDown,
   CircleHelp,
   KeyRound,
+  ListChecks,
   LoaderCircle,
   Plus,
   Settings2,
@@ -22,6 +23,8 @@ import { HelpDialog } from "./HelpDialog";
 import { ProviderDialog } from "./ProviderDialog";
 import { DecisionCard, RUN_LABELS, RunThread } from "./RunThread";
 import { useDesktop } from "./useDesktop";
+import { FillWorkflow } from "./FillWorkflow";
+import { VoiceInput } from "./VoiceInput";
 import "./native.css";
 
 type Mode = "jev" | "hybrid";
@@ -31,6 +34,10 @@ export function NativeWorkspace() {
   const desktop = useDesktop();
   const task = useRun();
   const [goal, setGoal] = useState("");
+  const [fillOpen, setFillOpen] = useState(false);
+  const [fillActive, setFillActive] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
   const [appIds, setAppIds] = useState<string[]>([]);
   const [mode, setMode] = useState<Mode>("jev");
   const [consent, setConsent] = useState(false);
@@ -40,6 +47,7 @@ export function NativeWorkspace() {
   const [view, setView] = useState<"task" | "app">("task");
   const [validation, setValidation] = useState("");
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const fillTrigger = useRef<HTMLButtonElement>(null);
   const consentInput = useRef<HTMLInputElement>(null);
   const onboardingShown = useRef(false);
   const thread = useRef<HTMLDivElement>(null);
@@ -58,16 +66,19 @@ export function NativeWorkspace() {
   const decision =
     run?.status === "awaiting_approval" ||
     run?.status === "awaiting_confirmation";
-  const statusLabel =
-    busy && !active
-      ? "Starting task"
-      : run
-        ? RUN_LABELS[run.status]
-        : desktop.loading
-          ? "Loading workspace…"
-          : desktop.configError
-            ? "Connection issue"
-            : "Ready when you are";
+  const statusLabel = fillActive
+    ? "Form fill"
+    : voiceActive
+      ? "Dictating task"
+      : busy && !active
+        ? "Starting task"
+        : run
+          ? RUN_LABELS[run.status]
+          : desktop.loading
+            ? "Loading workspace…"
+            : desktop.configError
+              ? "Connection issue"
+              : "Ready when you are";
 
   useEffect(() => {
     if (!desktop.config || onboardingShown.current) return;
@@ -94,6 +105,7 @@ export function NativeWorkspace() {
     requestAnimationFrame(() => textarea.current?.focus());
   }
   function sampleTask() {
+    if (fillActive || voiceActive) return;
     setGoal(starterGoal);
     setMode("jev");
     setConsent(false);
@@ -102,7 +114,7 @@ export function NativeWorkspace() {
     focusComposer();
   }
   function freshTask(retry = false) {
-    if (active || busy) return;
+    if (active || busy || fillActive || voiceActive) return;
     const previous = run;
     task.reset();
     setGoal(retry && previous ? previous.goal : "");
@@ -135,7 +147,11 @@ export function NativeWorkspace() {
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (active || busy || desktop.loading) return;
+    if (active || busy || fillActive || desktop.loading) return;
+    if (voiceActive) {
+      setValidation("Finish or cancel dictation before starting a task.");
+      return;
+    }
     if (desktop.configError) {
       setValidation("Reconnect to the local runtime before starting.");
       void desktop.retryRuntime();
@@ -143,6 +159,13 @@ export function NativeWorkspace() {
     }
     if (!goal.trim()) {
       setValidation("Write a task for Otto first.");
+      focusComposer();
+      return;
+    }
+    if (goal.length > 2000) {
+      setValidation(
+        "Keep the task within 2,000 characters. Your full dictation is preserved so you can edit it.",
+      );
       focusComposer();
       return;
     }
@@ -275,15 +298,29 @@ export function NativeWorkspace() {
         >
           <div className="task-pane-header">
             <h1>{run ? "Your task" : "New task"}</h1>
-            <button
-              className="icon-button"
-              aria-label="New task"
-              title="New task"
-              onClick={() => freshTask()}
-              disabled={active || busy || (!run && !goal)}
-            >
-              <Plus size={17} />
-            </button>
+            <div className="task-pane-actions">
+              <button
+                ref={fillTrigger}
+                className="fill-entry"
+                onClick={() => setFillOpen(true)}
+                disabled={active || busy || voiceActive || fillActive}
+                title="Review and fill exact form values"
+              >
+                <ListChecks size={14} />
+                Fill form
+              </button>
+              <button
+                className="icon-button"
+                aria-label="New task"
+                title="New task"
+                onClick={() => freshTask()}
+                disabled={
+                  active || busy || fillActive || voiceActive || (!run && !goal)
+                }
+              >
+                <Plus size={17} />
+              </button>
+            </div>
           </div>
           <div className="task-body">
             <div ref={thread} className="task-thread">
@@ -376,7 +413,11 @@ export function NativeWorkspace() {
                       </button>
                     </div>
                   )}
-                  <button className="sample-task" onClick={sampleTask}>
+                  <button
+                    className="sample-task"
+                    onClick={sampleTask}
+                    disabled={voiceActive || fillActive}
+                  >
                     <Sparkles size={14} />
                     <span>
                       Try a simple first task
@@ -422,7 +463,7 @@ export function NativeWorkspace() {
               <button
                 type="button"
                 className={`scope-button ${needsApps ? "needs-apps" : ""}`}
-                disabled={active || busy}
+                disabled={active || busy || fillActive}
                 onClick={() => setDialog("apps")}
               >
                 <AppWindow size={14} />
@@ -459,7 +500,7 @@ export function NativeWorkspace() {
                 }
                 spellCheck={false}
                 maxLength={2000}
-                disabled={active || busy}
+                disabled={active || busy || fillActive}
                 aria-describedby={
                   validation ? "task-validation" : "task-helper"
                 }
@@ -485,7 +526,7 @@ export function NativeWorkspace() {
                   <ChevronDown size={12} />
                 </summary>
                 <div className="composer-options-body">
-                  <fieldset disabled={active || busy}>
+                  <fieldset disabled={active || busy || fillActive}>
                     <legend>Agent mode</legend>
                     <div className="mode-control">
                       <label className={mode === "jev" ? "is-selected" : ""}>
@@ -530,7 +571,7 @@ export function NativeWorkspace() {
                         setConsent(event.target.checked);
                         setValidation("");
                       }}
-                      disabled={active || busy}
+                      disabled={active || busy || fillActive}
                     />
                     <span>
                       Allow selected-app text and controls to{" "}
@@ -574,6 +615,23 @@ export function NativeWorkspace() {
                   )}
                 </div>
               </details>
+              {voiceActive && (
+                <p className="voice-hint">
+                  Stop to add the dictation to your draft. Nothing starts
+                  automatically.
+                </p>
+              )}
+              {voiceError && (
+                <p className="voice-message" role="alert">
+                  {voiceError}
+                </p>
+              )}
+              {goal.length > 2000 && (
+                <p className="voice-message" role="alert">
+                  This draft has {goal.length.toLocaleString()} characters. Edit
+                  it to 2,000 or fewer before starting.
+                </p>
+              )}
               {validation && (
                 <p
                   id="task-validation"
@@ -599,31 +657,51 @@ export function NativeWorkspace() {
                 <span>{mode === "jev" ? "TypeSafe Jev" : "Hybrid"}</span>
                 <ChevronDown size={11} />
               </button>
-              {active ? (
-                <button
-                  className="send-task is-stop"
-                  type="button"
-                  onClick={() => void task.action("stop")}
-                  aria-label="Stop task"
-                  title="Stop task"
-                >
-                  <Square size={12} fill="currentColor" />
-                </button>
-              ) : (
-                <button
-                  className="send-task"
-                  type="submit"
-                  disabled={busy || desktop.loading}
-                  aria-label="Start task"
-                  title="Start task"
-                >
-                  {busy ? (
-                    <LoaderCircle size={16} className="spinner" />
-                  ) : (
-                    <ArrowUp size={18} />
-                  )}
-                </button>
-              )}
+              <div className="composer-send-controls">
+                {!active && (
+                  <VoiceInput
+                    disabled={busy || fillActive || desktop.loading}
+                    onActivityChange={setVoiceActive}
+                    onError={setVoiceError}
+                    onTranscript={(text) => {
+                      setGoal(
+                        (current) =>
+                          `${current}${current && !current.endsWith("\n") ? "\n" : ""}${text}`,
+                      );
+                      setValidation("");
+                      focusComposer();
+                    }}
+                  />
+                )}
+                {active ? (
+                  <button
+                    className="send-task is-stop"
+                    type="button"
+                    onClick={() => void task.action("stop")}
+                    aria-label="Stop task"
+                    title="Stop task"
+                  >
+                    <Square size={12} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button
+                    className="send-task"
+                    type="submit"
+                    disabled={
+                      busy || desktop.loading || fillActive || voiceActive
+                    }
+                    style={voiceActive ? { display: "none" } : undefined}
+                    aria-label="Start task"
+                    title="Start task"
+                  >
+                    {busy ? (
+                      <LoaderCircle size={16} className="spinner" />
+                    ) : (
+                      <ArrowUp size={18} />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </form>
           <div id="task-helper" className="composer-hint">
@@ -637,6 +715,8 @@ export function NativeWorkspace() {
                 <LoaderCircle size={11} className="spinner" />
                 Starting…
               </>
+            ) : voiceActive ? (
+              <span>Dictation stops automatically after 40 seconds.</span>
             ) : prerequisite ? (
               <button onClick={resolvePrerequisite}>
                 {prerequisite}
@@ -687,7 +767,7 @@ export function NativeWorkspace() {
           plannerNeeded={
             mode === "hybrid" && !desktop.config?.plannerConfigured
           }
-          locked={active || busy}
+          locked={active || busy || fillActive}
           onUpdate={desktop.setConfig}
           onClose={() => {
             setDialog(null);
@@ -695,6 +775,21 @@ export function NativeWorkspace() {
           }}
         />
       )}
+      <FillWorkflow
+        open={fillOpen}
+        onClose={() => {
+          setFillOpen(false);
+          requestAnimationFrame(() => fillTrigger.current?.focus());
+        }}
+        onActivityChange={setFillActive}
+        apps={desktop.apps}
+        initialAppId={selectedApps[0]?.id}
+        permissions={desktop.permissions}
+        loading={desktop.loading}
+        appsError={desktop.appsError}
+        onRefresh={() => void refreshApps()}
+        onPermission={() => void desktop.requestPermission("accessibility")}
+      />
       {dialog === "help" && (
         <HelpDialog sourceUrl={sourceUrl} onClose={() => setDialog(null)} />
       )}

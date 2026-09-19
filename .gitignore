@@ -3,6 +3,7 @@ dist/
 dist-desktop/
 release/
 desktop/native/macos/otto-ax
+desktop/native/macos/otto-voice
 .env
 .env.*
 !.env.example

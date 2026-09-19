@@ -9,6 +9,8 @@ $ProgressPreference = 'SilentlyContinue'
 $script:AppRecords = @{}
 $script:AllowedApps = @{}
 $script:Snapshots = @{}
+$script:WindowIdentities = @{}
+$script:ControlIdentities = @{}
 $script:StartupError = $null
 
 $nativeSource = @'
@@ -310,6 +312,22 @@ function Read-Snapshot([string]$AppId) {
   $window = Get-AppWindow $appRecord
   $root = [System.Windows.Automation.AutomationElement]::FromHandle($window)
   if ($null -eq $root -or $root.Current.ProcessId -ne $appRecord.app.pid) { throw 'Windows could not access the UI Automation tree of the selected application.' }
+  $windowToken = $null
+  if ($script:WindowIdentities.ContainsKey($AppId)) {
+    $previous = $script:WindowIdentities[$AppId]
+    try {
+      if ($previous.window -eq $window -and [System.Windows.Automation.Automation]::Compare($previous.root, $root)) { $windowToken = $previous.token }
+    } catch { $windowToken = $null }
+  }
+  if ($null -eq $windowToken) {
+    $windowToken = [Guid]::NewGuid().ToString('N')
+    $script:WindowIdentities[$AppId] = @{ window=$window; root=$root; token=$windowToken }
+  }
+  $previousControls = @{}
+  if ($script:ControlIdentities.ContainsKey($AppId) -and $script:ControlIdentities[$AppId].windowToken -eq $windowToken) {
+    $previousControls = $script:ControlIdentities[$AppId].elements
+  }
+  $nextControls = @{}
   $snapshotId = [Guid]::NewGuid().ToString('N')
   $controls = New-Object 'System.Collections.Generic.List[object]'
   $text = New-Object System.Text.StringBuilder
@@ -346,7 +364,7 @@ function Read-Snapshot([string]$AppId) {
       if (-not $sensitive) {
         $valuePattern = Get-Pattern $element ([System.Windows.Automation.ValuePattern]::Pattern)
         if ($null -ne $valuePattern) {
-          $value = Limit-Text $valuePattern.Current.Value 2000
+          $value = Limit-Text $valuePattern.Current.Value 2001
           $editable = -not $valuePattern.Current.IsReadOnly
         }
         if ($current.IsEnabled) {
@@ -379,8 +397,17 @@ function Read-Snapshot([string]$AppId) {
       } else { $label = 'Sensitive field'; $value = $null }
       if ([string]::IsNullOrWhiteSpace($label)) { $label = $role }
       $id = '{0}:{1}' -f $snapshotId, $controls.Count
+      $runtimeIdentity = $element.GetRuntimeId() -join ','
+      $identity = [Guid]::NewGuid().ToString('N')
+      if ($previousControls.ContainsKey($runtimeIdentity)) {
+        try {
+          $previousControl = $previousControls[$runtimeIdentity]
+          if ($previousControl.element.Current.ProcessId -eq $current.ProcessId -and [System.Windows.Automation.Automation]::Compare($previousControl.element, $element)) { $identity = $previousControl.token }
+        } catch { }
+      }
+      $nextControls[$runtimeIdentity] = @{ element=$element; token=$identity }
       $bounds = $current.BoundingRectangle
-      $control = @{ id=$id; role=$role; label=$label; enabled=[bool]$current.IsEnabled; actions=@($actions.ToArray()); editable=[bool]$editable; sensitive=[bool]$sensitive; source='accessibility' }
+      $control = @{ id=$id; identity=$identity; role=$role; label=$label; enabled=[bool]$current.IsEnabled; actions=@($actions.ToArray()); editable=[bool]$editable; sensitive=[bool]$sensitive; source='accessibility' }
       if ($null -ne $value) { $control.value = $value }
       if (-not $bounds.IsEmpty -and -not [double]::IsInfinity($bounds.Width) -and -not [double]::IsNaN($bounds.Width)) {
         $control.bounds = @{ x=$bounds.X; y=$bounds.Y; width=$bounds.Width; height=$bounds.Height }
@@ -395,7 +422,8 @@ function Read-Snapshot([string]$AppId) {
     catch [System.InvalidOperationException] { continue }
   }
   $timer.Stop()
-  $result = @{ snapshotId=$snapshotId; app=$appRecord.app; title=[Otto.Native]::Title($window); text=(Limit-Text $text.ToString() 24000); controls=@($controls.ToArray()); capturedAt=[DateTime]::UtcNow.ToString('o') }
+  $script:ControlIdentities[$AppId] = @{ windowToken=$windowToken; elements=$nextControls }
+  $result = @{ snapshotId=$snapshotId; windowToken=$windowToken; app=$appRecord.app; title=[Otto.Native]::Title($window); text=(Limit-Text $text.ToString() 24000); controls=@($controls.ToArray()); capturedAt=[DateTime]::UtcNow.ToString('o') }
   # PrintWindow captures only this selected window. No full-screen fallback that could expose unrelated apps.
   $sensitiveBounds = @($controls | Where-Object { $_.sensitive -and $_.ContainsKey('bounds') } | ForEach-Object { $_.bounds })
   $result.protectedBounds = $sensitiveBounds
@@ -496,7 +524,7 @@ function Invoke-NativeAction($Action) {
     if ($value -isnot [string] -or $value.Length -gt 10000) { throw 'Fill requires literal text of at most 10,000 characters.' }
     $pattern = Get-Pattern $element ([System.Windows.Automation.ValuePattern]::Pattern)
     if ($null -eq $pattern -or $pattern.Current.IsReadOnly) { throw 'This control no longer accepts a native value.' }
-    if ((Limit-Text $pattern.Current.Value 2000) -ne $target.value) { throw 'The field changed after observation. Observe it again.' }
+    if ((Limit-Text $pattern.Current.Value 2001) -ne $target.value) { throw 'The field changed after observation. Observe it again.' }
     $pattern.SetValue($value)
   } elseif ($kind -eq 'press' -and $nativeAction -eq 'press') {
     switch ($target.pressPattern) {
@@ -545,6 +573,8 @@ while ($null -ne ($line = [Console]::ReadLine())) {
         'apps' { $result = Get-Apps }
         'configure' {
           $script:Snapshots = @{}
+          $script:WindowIdentities = @{}
+          $script:ControlIdentities = @{}
           $script:AllowedApps = @{}
           $ids = Get-Field $request 'appIds' @()
           if ($ids -isnot [System.Array] -or $ids.Count -gt 8) { throw 'Select up to eight application ids.' }

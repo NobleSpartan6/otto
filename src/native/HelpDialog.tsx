@@ -13,40 +13,54 @@ export function HelpDialog({
     <Dialog title="A little direction. A lot done." onClose={onClose}>
       <div className="help-content">
         <p>
-          Otto works in desktop apps you choose. It proposes one action at a
-          time, and you approve each step.
+          Choose a guided task or fill a form with exact values. Otto works only
+          in the apps you select.
         </p>
         <ol>
           <li>
-            <strong>Connect your key.</strong>
+            <strong>Choose how to work.</strong>
             <p>
-              Start with TypeSafe Jev. Add an OpenAI planner only if you want
-              Hybrid mode.
+              Guided tasks use your TypeSafe key. Fill form reads and edits
+              reviewed native fields locally, without an API key.
             </p>
           </li>
           <li>
-            <strong>Choose the apps and write a task.</strong>
+            <strong>Write it, or dictate it.</strong>
             <p>
-              For Jev-only typing tasks, put the exact text in quotes. Try a
-              blank document first.
+              The microphone adds speech to your draft. Stop to review the text;
+              nothing starts automatically. Dictation stops after 40 seconds and
+              uses system speech recognition.
             </p>
           </li>
           <li>
-            <strong>Review what happens next.</strong>
+            <strong>Review the exact changes.</strong>
             <p>
-              Otto shows the intended app, control, and text. Stop any time. You
-              confirm when the result is complete.
+              Approve each guided action, or approve one form plan showing every
+              field and value. For Jev-only typing tasks, put the exact text in
+              quotes. Stop any time.
+            </p>
+          </li>
+          <li>
+            <strong>Check the evidence.</strong>
+            <p>
+              You confirm guided task completion. A form receipt reports native
+              value checks; it does not establish that the app saved or
+              submitted the form. Edits may autosave in the target app.
             </p>
           </li>
         </ol>
         <div className="info-note">
-          With your consent, selected-app text and controls go to TypeSafe.
-          Hybrid mode also shares text with OpenAI. Screenshots stay local
-          unless you separately allow visual planning.
+          With your consent, guided tasks share selected-app text and controls
+          with TypeSafe. Hybrid mode also shares text with OpenAI. Screenshots
+          stay local unless you separately allow visual planning. Form fills and
+          dictation don’t need provider keys.
         </div>
         <p className="field-hint">
-          Otto is an unsigned alpha for macOS and Windows. Some apps expose
-          fewer usable controls.
+          On macOS, enable this app under Accessibility in System Settings.
+          Screen Recording enables previews. After an alpha update, if Otto is
+          already enabled but access stays off, remove its old Accessibility
+          entry and add /Applications/Otto.app again. Otto rechecks when you
+          return.
         </p>
         <div className="dialog-footer">
           <div className="help-links">

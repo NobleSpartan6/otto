@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import type { JevRequestMetric } from "../shared/types.js";
+
 const ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 const TIMEOUT_MS = 15_000;
 
@@ -8,6 +11,8 @@ export interface DecisionInput {
   history: unknown[];
   apiKey: string;
   signal?: AbortSignal;
+  /** Trusted accounting observer. Contains no credentials, request text, or provider body. */
+  onRequest?: (record: JevRequestMetric) => void;
 }
 
 export interface Decision {
@@ -17,6 +22,8 @@ export interface Decision {
   complete: number;
   latencyMs: number;
   inputTokens: number;
+  outputTokens?: number;
+  model?: string;
 }
 
 type ErrorCode =
@@ -55,6 +62,10 @@ function isTokenCount(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+function isModelName(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/.test(value);
+}
+
 function invalidResponse(): never {
   throw new TypeSafeError(
     "invalid_response",
@@ -68,8 +79,7 @@ function parseDecision(
 ): Omit<Decision, "latencyMs"> {
   if (
     !isRecord(value) ||
-    typeof value.model !== "string" ||
-    !value.model.trim()
+    !isModelName(value.model)
   )
     invalidResponse();
   if (!isRecord(value.answers) || !isRecord(value.usage)) invalidResponse();
@@ -114,6 +124,8 @@ function parseDecision(
     probabilities,
     complete: complete.noul,
     inputTokens: value.usage.input_tokens,
+    outputTokens: value.usage.output_tokens,
+    model: value.model,
   };
 }
 
@@ -208,8 +220,15 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
       controller.abort();
     }, TIMEOUT_MS);
     const started = performance.now();
+    const accounting: JevRequestMetric = {
+      id: randomUUID(), requestedModel: "jev-latest", model: null,
+      startedAt: new Date().toISOString(), completedAt: null, outcome: "pending",
+      responseReceived: false, httpStatus: null, inputTokens: null, outputTokens: null, latencyMs: null,
+    };
+    const publish = () => input.onRequest?.({ ...accounting });
 
     try {
+      publish();
       const response = await fetchImpl(ENDPOINT, {
         method: "POST",
         headers: {
@@ -220,6 +239,9 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
         signal: controller.signal,
         redirect: "error",
       });
+      accounting.responseReceived = true;
+      accounting.httpStatus = response.status;
+      publish();
       if (!response.ok) {
         const message =
           response.status === 401 || response.status === 403
@@ -234,13 +256,28 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
       } catch {
         invalidResponse();
       }
+      // Preserve reported usage even when later action validation rejects the response.
+      // Missing or malformed usage is unknown, never a fabricated zero.
+      if (isRecord(value)) {
+        if (isModelName(value.model) && !value.model.includes(input.apiKey))
+          accounting.model = value.model;
+        if (isRecord(value.usage)) {
+          if (isTokenCount(value.usage.input_tokens)) accounting.inputTokens = value.usage.input_tokens;
+          if (isTokenCount(value.usage.output_tokens)) accounting.outputTokens = value.usage.output_tokens;
+        }
+        if (typeof value.model === "string" && value.model.includes(input.apiKey)) invalidResponse();
+      }
       if (controller.signal.aborted)
         throw new TypeSafeError("cancelled", "The decision was cancelled.");
+      const decision = parseDecision(value, candidateIds);
+      accounting.outcome = "succeeded";
       return {
-        ...parseDecision(value, candidateIds),
+        ...decision,
         latencyMs: Math.round(performance.now() - started),
       };
     } catch (error) {
+      accounting.outcome = timedOut ? "timeout" : input.signal?.aborted ? "cancelled" :
+        error instanceof TypeSafeError && error.code !== "invalid_input" ? error.code : "network_error";
       if (timedOut)
         throw new TypeSafeError(
           "timeout",
@@ -256,6 +293,9 @@ export function createDecider(fetchImpl: typeof fetch = fetch) {
     } finally {
       clearTimeout(timeout);
       input.signal?.removeEventListener("abort", cancel);
+      accounting.completedAt = new Date().toISOString();
+      accounting.latencyMs = Math.round(performance.now() - started);
+      publish();
     }
   };
 }

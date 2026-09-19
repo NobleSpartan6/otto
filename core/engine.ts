@@ -7,6 +7,7 @@ import type {
   OttoRun,
   RunStatus,
   StartInput,
+  JevRequestMetric,
 } from "../shared/types.js";
 import {
   buildCandidates,
@@ -57,6 +58,8 @@ interface RunState {
   lastAction?: { signature: string; beforeHash: string; label: string };
   noProgressAction?: string;
   noProgressCount: number;
+  untrackedJevInputTokens: number;
+  untrackedJevOutputTokens: number;
 }
 
 function validateInput(
@@ -239,12 +242,19 @@ export class OttoEngine {
           plannerInputTokens: null,
           plannerOutputTokens: null,
           modelLatencyMs: 0,
+          jev: {
+            attemptedRequests: 0, receivedResponses: 0, unknownUsageRequests: 0, untrackedCalls: 0,
+            reportedInputTokens: 0, reportedOutputTokens: 0, inputTokens: 0, outputTokens: 0,
+            usageComplete: true, requestLatencyMs: 0, requests: [],
+          },
         },
       },
       apiKey,
       controller: new AbortController(),
       epoch: 0,
       busy: false,
+      untrackedJevInputTokens: 0,
+      untrackedJevOutputTokens: 0,
       calls: 0,
       apps: [],
       currentAppId: input.appIds[0]!,
@@ -512,7 +522,10 @@ export class OttoEngine {
     );
     // Text from the selected application is untrusted evidence. Screenshots and
     // native handles stay out of Jev requests; protected values are redacted.
-    const decision = await this.decideFn({
+    let requestTracked = false;
+    let decision: Decision | undefined;
+    try {
+      decision = await this.decideFn({
       goal: state.run.subgoal ?? state.run.goal,
       observation: {
         originalGoal: state.run.goal,
@@ -535,8 +548,26 @@ export class OttoEngine {
       history: structuredClone(state.history),
       apiKey: state.apiKey!,
       signal: state.controller.signal,
-    });
+      onRequest: (record) => {
+        requestTracked = true;
+        // Accounting survives Stop: a cancelled request can still incur usage.
+        this.recordJevRequest(state, record);
+      },
+      });
+    } finally {
+      // Injected/legacy deciders may not provide request lifecycle telemetry.
+      // Keep their reported subtotal, but never infer complete billing usage.
+      if (!requestTracked) {
+        state.run.metrics!.jev!.untrackedCalls++;
+        if (decision && Number.isSafeInteger(decision.inputTokens) && decision.inputTokens >= 0)
+          state.untrackedJevInputTokens += decision.inputTokens;
+        if (decision && Number.isSafeInteger(decision.outputTokens) && decision.outputTokens! >= 0)
+          state.untrackedJevOutputTokens += decision.outputTokens!;
+        this.updateJevTotals(state);
+      }
+    }
     if (!this.current(state, epoch)) return;
+    if (!decision) throw new Error("Invalid model decision.");
     const action = candidates.find(
       (candidate) => candidate.id === decision.choice,
     );
@@ -554,11 +585,10 @@ export class OttoEngine {
       decision.latencyMs < 0
     )
       throw new Error("Invalid model decision.");
-    state.run.metrics!.jevInputTokens += decision.inputTokens;
     state.run.metrics!.modelLatencyMs += decision.latencyMs;
     this.event(state, "decision", action.label, {
       ...decision,
-      model: "jev-latest",
+      model: decision.model,
     });
     if (
       state.run.mode === "hybrid" &&
@@ -824,6 +854,31 @@ export class OttoEngine {
     }
     // Hold the active slot until any already-issued helper operation settles.
     if (!state.busy && this.active === state) this.active = undefined;
+  }
+
+  private recordJevRequest(state: RunState, record: JevRequestMetric): void {
+    const requests = state.run.metrics!.jev!.requests;
+    const index = requests.findIndex((item) => item.id === record.id);
+    if (index < 0) requests.push({ ...record });
+    else requests[index] = { ...record };
+    this.updateJevTotals(state);
+  }
+
+  private updateJevTotals(state: RunState): void {
+    const ledger = state.run.metrics!.jev!;
+    ledger.attemptedRequests = ledger.requests.length;
+    ledger.receivedResponses = ledger.requests.filter((item) => item.responseReceived).length;
+    ledger.unknownUsageRequests = ledger.requests.filter((item) =>
+      item.outcome === "pending" || item.inputTokens === null || item.outputTokens === null).length;
+    ledger.reportedInputTokens = state.untrackedJevInputTokens + ledger.requests.reduce((sum, item) => sum + (item.inputTokens ?? 0), 0);
+    ledger.reportedOutputTokens = state.untrackedJevOutputTokens + ledger.requests.reduce((sum, item) => sum + (item.outputTokens ?? 0), 0);
+    ledger.inputTokens = ledger.untrackedCalls || ledger.requests.some((item) => item.outcome === "pending" || item.inputTokens === null)
+      ? null : ledger.reportedInputTokens;
+    ledger.outputTokens = ledger.untrackedCalls || ledger.requests.some((item) => item.outcome === "pending" || item.outputTokens === null)
+      ? null : ledger.reportedOutputTokens;
+    ledger.usageComplete = ledger.untrackedCalls === 0 && ledger.unknownUsageRequests === 0;
+    ledger.requestLatencyMs = ledger.requests.reduce((sum, item) => sum + (item.latencyMs ?? 0), 0);
+    state.run.metrics!.jevInputTokens = ledger.reportedInputTokens;
   }
 
   private event(

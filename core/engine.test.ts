@@ -6,6 +6,7 @@ import type {
   NativeDriver,
   NativeSnapshot,
   StartInput,
+  OttoRun,
 } from "../shared/types.js";
 import {
   OttoEngine,
@@ -15,7 +16,7 @@ import {
   RUN_TIMEOUT_MS,
 } from "./engine.js";
 import { buildCandidates, MAX_CANDIDATES } from "./candidates.js";
-import type { Decision, DecisionInput } from "./typesafe.js";
+import { createDecider, type Decision, type DecisionInput } from "./typesafe.js";
 import { PLANNER_MODEL, type Plan, type PlannerInput } from "./planner.js";
 
 const KEY = "typesafe-private-test-key";
@@ -584,6 +585,7 @@ test("hybrid escalates uncertainty after an ordinary fast-path action", async ()
 });
 
 test("trace metrics sum measured usage and latency while preserving unknown planner totals", async () => {
+  const legacyTotals = (run: OttoRun) => { const { jev: _ledger, ...totals } = run.metrics!; return totals; };
   const driver = new Driver();
   driver.makeSnapshot = (id, sequence) => ({ ...snapshot(id, sequence), text: `State ${sequence}` });
   const usage = [
@@ -600,18 +602,111 @@ test("trace metrics sum measured usage and latency while preserving unknown plan
   );
   try {
     let run = await engine.start({ ...input, mode: "hybrid" }, KEY, "openai-key");
-    assert.deepEqual(run.metrics, { jevInputTokens: 0, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 0 });
+    assert.deepEqual(legacyTotals(run), { jevInputTokens: 0, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 0 });
     run = await engine.waitForIdle(run.id);
-    assert.deepEqual(run.metrics, { jevInputTokens: 100, plannerInputTokens: 1000, plannerOutputTokens: 20, modelLatencyMs: 6 });
+    assert.deepEqual(legacyTotals(run), { jevInputTokens: 100, plannerInputTokens: 1000, plannerOutputTokens: 20, modelLatencyMs: 6 });
     run = await approveReady(engine, run.id, run.pendingAction!.id);
-    assert.deepEqual(run.metrics, { jevInputTokens: 300, plannerInputTokens: 1700, plannerOutputTokens: 50, modelLatencyMs: 13 });
+    assert.deepEqual(legacyTotals(run), { jevInputTokens: 300, plannerInputTokens: 1700, plannerOutputTokens: 50, modelLatencyMs: 13 });
     run = await approveReady(engine, run.id, run.pendingAction!.id);
-    assert.deepEqual(run.metrics, { jevInputTokens: 500, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 20 });
+    assert.deepEqual(legacyTotals(run), { jevInputTokens: 500, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 20 });
     run = await approveReady(engine, run.id, run.pendingAction!.id);
-    assert.deepEqual(run.metrics, { jevInputTokens: 700, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 27 });
+    assert.deepEqual(legacyTotals(run), { jevInputTokens: 700, plannerInputTokens: null, plannerOutputTokens: null, modelLatencyMs: 27 });
     assert.equal(run.plannerCalls, 4);
     assert.equal(run.decisionCalls, 7);
+    assert.equal(run.metrics!.jev!.untrackedCalls, 7);
+    assert.equal(run.metrics!.jev!.usageComplete, false);
+    assert.equal(run.metrics!.jev!.inputTokens, null);
     assert.deepEqual(JSON.parse(JSON.stringify(run)).metrics, run.metrics);
+  } finally { engine.stopAll(); }
+});
+
+test("Jev ledger preserves actual response model and known usage but leaves failed totals unknown", async () => {
+  const driver = new Driver();
+  let calls = 0;
+  const decider = createDecider(async (_url, options) => {
+    if (++calls === 2) throw new Error("Network failure with private details");
+    const body = JSON.parse(String(options?.body));
+    const ids = Object.keys(body.questions.next_action.criteria);
+    return Response.json({ model: "jev-fixture-revision", answers: {
+      next_action: { type: "choice", choice: ids[0], confidence: 1,
+        probabilities: Object.fromEntries(ids.map(id => [id, id === ids[0] ? 1 : 0])) },
+      complete: { type: "noul", noul: 0 },
+    }, usage: { input_tokens: 123, output_tokens: 7 } });
+  });
+  const engine = new OttoEngine(driver, decider);
+  try {
+    let run = await startReady(engine, input, KEY);
+    assert.equal(run.status, "awaiting_approval");
+    assert.equal(run.metrics!.jev!.attemptedRequests, 1);
+    assert.equal(run.metrics!.jev!.receivedResponses, 1);
+    assert.equal(run.metrics!.jev!.inputTokens, 123);
+    assert.equal(run.metrics!.jev!.outputTokens, 7);
+    assert.equal(run.metrics!.jev!.usageComplete, true);
+    assert.equal(run.events.find(event => event.kind === "decision")!.model, "jev-fixture-revision");
+    run = await approveReady(engine, run.id, run.pendingAction!.id);
+    assert.equal(run.status, "failed");
+    const ledger = run.metrics!.jev!;
+    assert.equal(ledger.attemptedRequests, 2);
+    assert.equal(ledger.receivedResponses, 1);
+    assert.equal(ledger.unknownUsageRequests, 1);
+    assert.equal(ledger.reportedInputTokens, 123);
+    assert.equal(ledger.reportedOutputTokens, 7);
+    assert.equal(ledger.inputTokens, null);
+    assert.equal(ledger.outputTokens, null);
+    assert.equal(ledger.usageComplete, false);
+    assert.deepEqual(ledger.requests.map(request => request.outcome), ["succeeded", "network_error"]);
+    const exported = JSON.parse(JSON.stringify(run));
+    assert.equal(exported.metrics.jev.inputTokens, null);
+    assert.equal(exported.metrics.jev.requests[0].model, "jev-fixture-revision");
+    assert.ok(!JSON.stringify(exported).includes(KEY));
+    assert.ok(!JSON.stringify(exported).includes("private details"));
+    assert.equal(driver.actions.length, 1);
+  } finally { engine.stopAll(); }
+});
+
+test("Stop preserves attempted, pending and cancelled unknown usage without executing an action", { timeout: 10_000 }, async () => {
+  const driver = new Driver();
+  const sent = deferred<void>();
+  const decider = createDecider(async (_url, options) => {
+    sent.resolve();
+    return new Promise<Response>((_resolve, reject) => {
+      options?.signal?.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+    });
+  });
+  const engine = new OttoEngine(driver, decider);
+  try {
+    const initial = await engine.start(input, KEY);
+    await sent.promise;
+    const pending = engine.get(initial.id).metrics!.jev!;
+    assert.equal(pending.attemptedRequests, 1);
+    assert.equal(pending.requests[0]!.outcome, "pending");
+    assert.equal(pending.inputTokens, null);
+    engine.stop(initial.id);
+    const stopped = await engine.waitForIdle(initial.id);
+    assert.equal(stopped.status, "stopped");
+    assert.equal(stopped.metrics!.jev!.requests[0]!.outcome, "cancelled");
+    assert.equal(stopped.metrics!.jev!.receivedResponses, 0);
+    assert.equal(stopped.metrics!.jev!.inputTokens, null);
+    assert.equal(stopped.metrics!.jev!.outputTokens, null);
+    assert.equal(stopped.metrics!.jev!.usageComplete, false);
+    assert.equal(driver.actions.length, 0);
+  } finally { engine.stopAll(); }
+});
+
+test("a received invalid decision retains partial usage without inventing an output count", async () => {
+  const engine = new OttoEngine(new Driver(), createDecider(async () => Response.json({
+    model: "jev-fixture-revision", usage: { input_tokens: 321 }, answers: {},
+  })));
+  try {
+    const run = await startReady(engine, input, KEY);
+    assert.equal(run.status, "failed");
+    const ledger = run.metrics!.jev!;
+    assert.equal(ledger.attemptedRequests, 1);
+    assert.equal(ledger.receivedResponses, 1);
+    assert.equal(ledger.requests[0]!.outcome, "invalid_response");
+    assert.equal(ledger.inputTokens, 321);
+    assert.equal(ledger.outputTokens, null);
+    assert.equal(ledger.usageComplete, false);
   } finally { engine.stopAll(); }
 });
 

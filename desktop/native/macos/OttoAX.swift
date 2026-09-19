@@ -16,6 +16,9 @@ final class OttoAX {
     }
     var allowed: [String: NSRunningApplication] = [:]
     var targets: [String: Target] = [:]
+    var windowIdentities: [String: (element: AXUIElement, token: String)] = [:]
+    var controlIdentities: [String: (windowToken: String, elements: [(element: AXUIElement, token: String)])] = [:]
+    var documentIdentities: [String: (windowToken: String, value: String, token: String)] = [:]
     var snapshotId = ""
     var snapshotTime = Date.distantPast
     var snapshotApp = ""
@@ -147,6 +150,20 @@ final class OttoAX {
         guard AXIsProcessTrusted() else { throw HelperError(message: "Enable Accessibility permission for Otto in System Settings.") }
         let selected = try app(id)
         let window = try selectedWindow(selected)
+        let windowToken: String
+        if let previous = windowIdentities[id], CFEqual(previous.element, window) {
+            windowToken = previous.token
+        } else {
+            windowToken = UUID().uuidString
+            windowIdentities[id] = (element: window, token: windowToken)
+        }
+        let previousControls = controlIdentities[id]?.windowToken == windowToken ? controlIdentities[id]!.elements : []
+        var nextControls: [(element: AXUIElement, token: String)] = []
+        let document = string(window, kAXDocumentAttribute)
+        if document.isEmpty { documentIdentities.removeValue(forKey: id) }
+        else if documentIdentities[id]?.windowToken != windowToken || documentIdentities[id]?.value != document {
+            documentIdentities[id] = (windowToken: windowToken, value: document, token: UUID().uuidString)
+        }
         invalidate()
         snapshotId = UUID().uuidString
         snapshotTime = Date()
@@ -162,21 +179,30 @@ final class OttoAX {
             let hash = CFHash(element)
             guard visited.insert(hash).inserted else { return }
             count += 1
+            let role = string(element, kAXRoleAttribute)
+            // Closed menu trees can expose off-screen items and recent-document
+            // labels. Only collect menu controls that are currently visible.
+            if ["AXMenu", "AXMenuItem", "AXMenuBarItem"].contains(role) {
+                guard (attribute(element, "AXHidden") as? Bool) != true,
+                      let rect = bounds(element), rect.values.allSatisfy({ $0.isFinite }),
+                      (rect["width"] ?? 0) > 0, (rect["height"] ?? 0) > 0 else { return }
+            }
             if isSensitive(element) {
                 if let rect = bounds(element) { protectedBounds.append(rect) }
                 return
             }
-            let role = string(element, kAXRoleAttribute)
             let label = label(element)
-            let value = String(string(element, kAXValueAttribute).prefix(1500))
+            let value = String(string(element, kAXValueAttribute).prefix(2001))
             if !label.isEmpty && label != role { text.append(label) }
             if !value.isEmpty && value != label { text.append(value) }
             let actions = capabilities(element)
             let enabled = (attribute(element, kAXEnabledAttribute) as? Bool) ?? true
             if !actions.isEmpty && enabled {
                 let targetId = "control-\(controls.count)"
+                let identity = previousControls.first(where: { CFEqual($0.element, element) })?.token ?? UUID().uuidString
+                nextControls.append((element: element, token: identity))
                 targets[targetId] = Target(element: element, pid: selected.processIdentifier, role: role, label: label, actions: actions, value: string(element, kAXValueAttribute))
-                var control: [String: Any] = ["id": targetId, "role": role, "label": label, "value": value, "enabled": true,
+                var control: [String: Any] = ["id": targetId, "identity": identity, "role": role, "label": label, "value": value, "enabled": true,
                     "actions": actions, "editable": actions.contains("fill"), "sensitive": false, "source": "accessibility"]
                 if let b = bounds(element) { control["bounds"] = b }
                 controls.append(control)
@@ -186,12 +212,18 @@ final class OttoAX {
             }
         }
         visit(window, depth: 0)
-        // The selected app's own menu bar provides native menu commands without keyboard guesses.
+        // The first standard menu is the global Apple menu, not selected-app
+        // context. Never visit it or its system-wide recent-items descendants.
         let appRoot = AXUIElementCreateApplication(selected.processIdentifier)
-        if let menu = attribute(appRoot, kAXMenuBarAttribute), CFGetTypeID(menu) == AXUIElementGetTypeID() { visit(menu as! AXUIElement, depth: 0) }
-        var result: [String: Any] = ["snapshotId": snapshotId, "app": appInfo(selected), "title": string(window, kAXTitleAttribute),
+        if let menu = attribute(appRoot, kAXMenuBarAttribute), CFGetTypeID(menu) == AXUIElementGetTypeID(),
+           let items = attribute(menu as! AXUIElement, kAXChildrenAttribute) as? [AXUIElement] {
+            for item in items.dropFirst() { visit(item, depth: 0) }
+        }
+        controlIdentities[id] = (windowToken: windowToken, elements: nextControls)
+        var result: [String: Any] = ["snapshotId": snapshotId, "windowToken": windowToken, "app": appInfo(selected), "title": string(window, kAXTitleAttribute),
             "text": String(text.joined(separator: "\n").prefix(16000)), "controls": controls,
             "capturedAt": ISO8601DateFormatter().string(from: snapshotTime)]
+        if let documentIdentity = documentIdentities[id] { result["documentToken"] = documentIdentity.token }
         if let image = screenshot(selected, window: window) {
             snapshotImage = image
             result["screenshot"] = image
@@ -345,7 +377,7 @@ final class OttoAX {
             return permissions()
         case "apps": return ["apps": NSWorkspace.shared.runningApplications.filter(eligible).map(appInfo), "permissions": permissions()]
         case "configure":
-            allowed = [:]; invalidate()
+            allowed = [:]; windowIdentities.removeAll(); controlIdentities.removeAll(); documentIdentities.removeAll(); invalidate()
             guard let ids = request["appIds"] as? [String], ids.count <= 4 else { throw HelperError(message: "Select up to four apps.") }
             let running = NSWorkspace.shared.runningApplications.filter(eligible)
             var next: [String: NSRunningApplication] = [:]

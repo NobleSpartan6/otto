@@ -66,6 +66,15 @@ jobs:
           npx electron-builder --"$BUILD_PLATFORM" --"$BUILD_ARCH"
           --publish never
           '-c.artifactName=Otto-${version}-${os}-${arch}.${ext}'
+      - name: Verify macOS bundle integrity
+        if: matrix.platform == 'mac'
+        shell: bash
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            codesign --verify --deep --strict --verbose=2 release/mac-arm64/Otto.app
+          else
+            codesign --verify --deep --strict --verbose=2 release/mac/Otto.app
+          fi
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: unsigned-${{ matrix.platform }}-${{ matrix.arch }}

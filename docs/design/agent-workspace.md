@@ -32,3 +32,11 @@ Below the width where both panes remain usable, Task/App view controls retain th
 This assessment and all five CUA-S1 thread posts were included in the existing [Otto consultation](https://chatgpt.com/g/g-p-6aab76ef83348191ba1a4f34ed604089-otto/c/6aab7709-8e24-83ea-acd3-ffb85c655d28), with the UI showing **6 Pro**. The response agreed with compact persistent task/app panes, truthful readiness, structured approvals, separate verification, and progressive disclosure. It recommended preserving execution policy while implementing a read-only developer interface first.
 
 Accepted: compact current snapshots and inert preparation, explicit app scope, no screenshots or keys exported, exact declared-tokenizer measurements, coverage before savings. Deferred: cross-snapshot deltas (native IDs change), external execution/approval protocols, autonomous batch fills, and billed-savings claims. The current developer preparation result is not imported into Electron for execution; that handoff remains separate work.
+
+### Follow-up: reviewed fills and dictation, 19 September
+
+The same GPT-6 Pro consultation reviewed the next explicit execution capability after Alpha 3. It endorsed one immutable review of a bounded native text-edit set, with full preflight, fresh target binding before each write, exact readback, cancellation, and an independent final-state oracle. This is a new approval path restricted to literal fills; the general guided loop and external MCP authority are unchanged.
+
+Accepted refinements: native window and control identity tokens plus available document identity, a two-minute review expiry with fresh execution checks, truthful partial receipts, and “No submit action was issued” rather than implying edits cannot trigger target-app effects. Native value matches are not evidence of persistence. The test fixture writes a separate state file with launch identity and revision so evaluation does not rely on the agent declaring success.
+
+Dictation is optional task input, never an approval or automatic submission. Native recognizer availability and on-device capability are hard gates; no cloud fallback is added. Late cancellation results are discarded and the main-process microphone lifecycle is reflected in the renderer. Broad compatibility, live provider savings, and state-of-the-art claims remain dependent on further evidence.

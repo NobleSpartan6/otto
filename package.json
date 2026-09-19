@@ -1,6 +1,6 @@
 {
   "name": "otto-cua",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "private": true,
   "description": "An open-source macOS and Windows computer-use agent powered by TypeSafe Jev.",
   "type": "module",
@@ -17,12 +17,14 @@
     "build": "npm run build:native && vite build && tsc -p tsconfig.desktop.json",
     "start": "electron .",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.desktop.json --noEmit",
-    "test": "tsx --test core/*.test.ts desktop/*.test.ts",
+    "test": "tsx --test core/*.test.ts desktop/*.test.ts tests/ui/*.test.ts",
     "test:ui": "electron tests/ui/fixture.cjs",
     "benchmark:context": "tsx scripts/benchmark-context.ts",
     "dev:tools": "node dist-desktop/desktop/developer-server.js",
     "check": "npm run typecheck && npm test && npm run build",
-    "package": "npm run build && electron-builder --publish never"
+    "package": "npm run build && electron-builder --publish never",
+    "demo:form": "tsx scripts/launch-form-fixture.ts",
+    "test:batch-native": "tsx tests/native/batch-smoke.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

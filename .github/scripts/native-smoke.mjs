@@ -8,7 +8,7 @@ const command = process.platform === 'win32'
 if (!['win32', 'darwin'].includes(process.platform)) throw new Error('Native smoke requires Windows or macOS.');
 if (process.platform === 'win32') {
   const syntax = spawnSync(command, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command',
-    '$tokens=$null; $errors=$null; [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD "desktop/native/windows/otto-uia.ps1"), [ref]$tokens, [ref]$errors); if ($errors.Count) { $errors | Format-List; exit 1 }'],
+    'foreach ($file in @("otto-uia.ps1", "otto-voice.ps1")) { $tokens=$null; $errors=$null; [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD "desktop/native/windows/$file"), [ref]$tokens, [ref]$errors); if ($errors.Count) { $errors | Format-List; exit 1 } }'],
   { encoding: 'utf8', timeout: 15_000 });
   if (syntax.error || syntax.status !== 0) throw new Error(`Windows PowerShell syntax check failed: ${syntax.error?.message ?? syntax.stderr ?? syntax.stdout}`);
 }
