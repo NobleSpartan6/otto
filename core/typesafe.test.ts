@@ -56,7 +56,6 @@ test("sends documented native questions and returns a validated decision", async
     assert.deepEqual(body.state, {
       goal: input.goal,
       observation: input.observation,
-      candidates: input.candidates,
       history: [],
     });
     assert.deepEqual(body.questions.next_action.criteria, {

@@ -595,6 +595,10 @@ export class OttoEngine {
       state.run.pendingAction = {
         id: action.id,
         label: action.label,
+        appName: state.apps.find((app) => app.id === action.appId)?.name,
+        operation: action.kind,
+        target: safeControls.find((control) => control.id === action.targetId)?.label,
+        value: action.value,
         reason:
           "Review the target and its effect. This approval allows only this action.",
       };

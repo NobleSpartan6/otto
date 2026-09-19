@@ -95,5 +95,20 @@ export function useRun() {
       }
     }
   }
-  return { run, busy, error: error || pollingError, active, start, action };
+  function reset() {
+    if (active || busy) return;
+    revision.current += 1;
+    setRun(null);
+    setError("");
+    setPollingError("");
+  }
+  return {
+    run,
+    busy,
+    error: error || pollingError,
+    active,
+    start,
+    action,
+    reset,
+  };
 }

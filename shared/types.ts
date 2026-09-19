@@ -88,7 +88,15 @@ export interface OttoRun {
   createdAt: string;
   events: RunEvent[];
   snapshot?: NativeSnapshot;
-  pendingAction?: { id: string; label: string; reason: string };
+  pendingAction?: {
+    id: string;
+    label: string;
+    reason: string;
+    appName?: string;
+    operation?: ActionKind;
+    target?: string;
+    value?: string;
+  };
   result?: string;
   error?: string;
   verification?: "user_confirmed";

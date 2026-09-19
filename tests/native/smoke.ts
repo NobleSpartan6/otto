@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { randomUUID } from 'node:crypto';
 import { PlatformDriver } from '../../desktop/native-driver.js';
+import { DeveloperSession, formatObservation } from '../../core/developer.js';
 import type { NativeAction, NativeControl, NativeSnapshot } from '../../shared/types.js';
 
 // Manual integration test. All native effects are confined to the child PID this
@@ -84,12 +85,26 @@ try {
     target(snapshot, 'Close fixture', 'press');
     checks.push('AX editable field and buttons discovered in the launched fixture PID');
 
+    const inspection = new DeveloperSession();
+    const compact = inspection.inspect(snapshot);
+    const prepared = inspection.prepareFill({ snapshotToken: compact.snapshotToken,
+      fields: { 'Fixture text input': 'Prepared without typing' } });
+    assert.equal(prepared.executed, false);
+    assert.equal(prepared.plan.length, 1);
+    assert.equal(prepared.plan[0]!.value, 'Prepared without typing');
+    assert.equal(prepared.unresolved.length, 0);
+    assert.ok(!formatObservation(compact).includes('data:image/'));
+    const afterPreparation = await driver.observe(fixtureId);
+    assert.equal(target(afterPreparation, 'Fixture text input', 'fill').value, 'Initial fixture text');
+    snapshot = afterPreparation;
+    checks.push('Native snapshot compacted and literal fill prepared without changing the fixture');
+
     // PID 0 is not a desktop app and is never configured. This verifies rejection
     // without addressing any running user application, even in a faulty helper.
     await assert.rejects(driver.observe('0'));
     await assert.rejects(driver.act({ ...action(snapshot, field, 'fill', 'must not apply'), appId: '0' }));
     checks.push('Observe and act outside the fixture allowlist rejected');
-    const fill = action(snapshot, field, 'fill', 'Otto smoke verified');
+    const fill = action(snapshot, target(snapshot, 'Fixture text input', 'fill'), 'fill', 'Otto smoke verified');
     await dispatch(fill);
     await assert.rejects(driver.act(fill), /expired|again/i);
     checks.push('A consumed native action snapshot cannot be reused');

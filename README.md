@@ -33,7 +33,17 @@ npm run dev
 
 If your package manager disables dependency installation scripts, run `node node_modules/electron/install.js` to install Electron from its official distribution. On macOS, the native build uses Xcode when available to avoid mismatched command-line SDKs.
 
-In Settings, enter your TypeSafe key. Add an OpenAI API key for Hybrid mode. Keys remain in the main process; optional persistence uses Electron's OS-backed encryption. The renderer never receives stored keys.
+On first launch, paste your TypeSafe key into the connection dialog and click **Save connection**. Jev-only mode is selected by default; no OpenAI key is required.
+
+For your first task:
+
+1. Open a blank document in TextEdit (macOS) or Notepad (Windows).
+2. Allow Accessibility when prompted, then click **Check again**.
+3. Use **Choose apps** to select that app, then click **Try a simple first task**.
+4. Allow selected-app text to be sent to TypeSafe, click **Start task**, and review each proposed action.
+5. Confirm the result when the text appears.
+
+A saved key has not yet been verified against TypeSafe; the first task makes the live request. Add an OpenAI API key under **OpenAI planner** in Connections to use Hybrid mode. Keys remain in the main process; optional persistence uses Electron's OS-backed encryption. The renderer never receives stored keys.
 
 On macOS, grant Otto Accessibility permission. Screen Recording is optional for text-only tasks and required for window previews, local OCR, and visual planning. Windows access is limited to the normal user desktop; elevated apps and UAC screens are unsupported.
 
@@ -54,11 +64,21 @@ On macOS, grant Otto Accessibility permission. Screen Recording is optional for 
 npm run check       # TypeScript, tests, native helper, frontend build
 npm run dev:web     # distribution website preview
 npm run package     # installer for the current OS
+npm run test:ui     # isolated Electron UI fixtures after building
+npm run benchmark:context # reproducible representation/tokenizer comparison
 ```
 
 `core/` contains provider adapters, candidate construction, and the bounded task loop. `desktop/` contains Electron IPC, local OCR, and native helpers. `shared/` owns the protocol types. `src/` is the desktop UI and distribution site.
 
 See the [technical spec](docs/technical-spec.md), [evaluation plan](docs/evaluation.md), and [reference architecture analysis](docs/reference-architecture.md). GPT-6 Pro was consulted on the architecture; its advice is evaluated against actual implementation and tests.
+
+The redesigned agent workspace follows an [assessment of Diffusion Studio's installed app and source, plus Cua](docs/design/agent-workspace.md). Task preparation, action review, and result verification stay distinct; routine activity is expandable.
+
+## For Codex and other coding agents
+
+Otto also provides a source-build **MCP stdio server** for compact, scoped desktop observations and literal form-fill preparation. It is keyless: your existing host agent supplies the reasoning. `inspect` returns short current-snapshot references; `prepare_fill` returns an inert plan and unresolved fields. It does not execute actions or bypass desktop approvals.
+
+See [developer setup and tools](docs/developer-tools.md) and the [reproducible context benchmark](docs/evaluation-developer.md). Tokenizer counts describe the tested representations, not billed savings or proven task success.
 
 ## Distribution
 

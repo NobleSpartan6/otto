@@ -155,6 +155,10 @@ test("every native action waits for explicit approval and provider payload omits
   });
   const run = await startReady(engine, input, KEY);
   assert.equal(run.status, "awaiting_approval");
+  assert.equal(run.pendingAction?.appName, "Text editor");
+  assert.equal(run.pendingAction?.operation, "fill");
+  assert.equal(run.pendingAction?.target, "Document");
+  assert.equal(run.pendingAction?.value, "hello");
   assert.equal(driver.actions.length, 0);
   assert.ok(run.snapshot?.screenshot);
   assert.ok(
