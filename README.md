@@ -93,7 +93,7 @@ The redesigned agent workspace follows an [assessment of Diffusion Studio's inst
 
 ## For Codex and other coding agents
 
-For an engineering walkthrough, read the [integration and evaluation case study](docs/portfolio/cohere.md), [native contract evaluation](docs/evaluation-native-contracts.md), and [five short lessons on agent evals](docs/learning/agent-evals.md).
+See the [native contract evaluation](docs/evaluation-native-contracts.md) for methods, results, and reproduction instructions.
 
 **[Otto for agents: overview, setup, and measured results](https://noblespartan6.github.io/otto/agents.html)** · [Use it in a running task](docs/current-task-usage.md)
 

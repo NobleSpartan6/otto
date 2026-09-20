@@ -80,4 +80,4 @@ Add a case by defining its initial state, authorized steps, observable final sta
 
 For an LLM-agent comparison, use the same task contracts with natural-language goals, frozen tools/model/budgets, independent final-state grading, and paired AB/BA order. Keep strategy compliance, task outcome, usage coverage, and operational failures separate. Include a strong batching baseline and tasks on additional app backends. The current native suite does not run that model comparison; the existing [one-pair Codex evaluation](evaluation-codex-agent-bridge.md) remains preliminary.
 
-The [learning guide](learning/agent-evals.md) explains the concepts with short exercises.
+See the [case definitions and grader](../evals/native-contracts.ts) and [native harness](../tests/native/contract-suite.ts) for the implementation.
