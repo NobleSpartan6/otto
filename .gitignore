@@ -12,3 +12,4 @@ output/
 test-results/
 playwright-report/
 *.log
+.codex/config.toml

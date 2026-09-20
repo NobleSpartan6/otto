@@ -1,5 +1,7 @@
 # Otto desktop context for coding agents
 
+For executable native actions and compact workflow receipts, use the newer [agent bridge](agent-bridge.md). This page documents the original read-only server, which remains available unchanged.
+
 Otto's local MCP server lets a coding agent inspect explicitly selected desktop apps as bounded text with short control references, then prepare literal values for native editable fields. It requires no TypeSafe or other provider key. The host agent still uses its own model and account.
 
 The MCP interface prepares a plan only. It does not execute clicks, fill fields, submit forms, request permissions, or import the plan into Electron's approval flow. For exact native text edits, the desktop app now provides a separate [reviewed form-fill workflow](verified-fills.md): paste the literal field map, review it locally, then explicitly approve. MCP preparation never supplies that approval.

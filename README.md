@@ -15,7 +15,7 @@ Choose the workflow that matches the work:
 | **Guided task · Jev-only** | A goal, selected apps, and approval of each concrete action. Quote exact text to enter. | TypeSafe key |
 | **Guided task · Hybrid** | The same action review, with subgoals and text drafts from the planner. | TypeSafe and OpenAI Platform keys |
 | **Fill a form** | A literal field map for one app; review all before/proposed values once. Each write and the final field set are checked through native readback. | No model calls or key |
-| **MCP developer tools** | Scoped compact observations and inert fill preparation for a host agent. No execution. | No Otto key; the host uses its own account |
+| **Agent bridge (source build)** | Scoped native inspection, actions, verified workflows, and optional bounded Jev delegation from Codex or another MCP host. | Exact actions: no Otto key. Delegation: TypeSafe key |
 
 For a guided task:
 
@@ -93,9 +93,9 @@ The redesigned agent workspace follows an [assessment of Diffusion Studio's inst
 
 ## For Codex and other coding agents
 
-Otto also provides a source-build **MCP stdio server** for compact, scoped desktop observations and literal form-fill preparation. It is keyless: your existing host agent supplies the reasoning. `inspect` returns short current-snapshot references; `prepare_fill` returns an inert plan and unresolved fields. It does not execute actions or bypass desktop approvals.
+Otto's source-build **agent bridge** lets a coding agent inspect an explicitly scoped native app, execute a known sequence locally, and receive a compact receipt. `run_steps` makes no model calls and checks supplied final values/text against native state. `act` supports individual fresh-reference actions. Optional `delegate` lets Jev choose among the host's explicit, single-use permitted actions; it stops on uncertainty instead of inventing actions or text.
 
-See [developer setup and tools](docs/developer-tools.md) and the [reproducible context benchmark](docs/evaluation-developer.md). Tokenizer counts describe the tested representations, not billed savings or proven task success.
+The bridge is read-only unless started with `--allow-actions`. Host task authorization still applies. It supports exposed native press/fill/vertical-scroll controls and Enter/Escape/Tab; it does not yet provide arbitrary visual grounding, drag, app launch, or a browser DOM driver. See [Codex setup](docs/agent-bridge.md), the [real Codex usage comparison](docs/evaluation-codex-agent-bridge.md), [native execution evaluation](docs/evaluation-agent-bridge.md), and the [older read-only context/preparation server](docs/developer-tools.md). The installed Alpha4 app remains a separate workflow.
 
 ## Distribution
 

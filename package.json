@@ -24,7 +24,11 @@
     "check": "npm run typecheck && npm test && npm run build",
     "package": "npm run build && electron-builder --publish never",
     "demo:form": "tsx scripts/launch-form-fixture.ts",
-    "test:batch-native": "tsx tests/native/batch-smoke.ts"
+    "test:batch-native": "tsx tests/native/batch-smoke.ts",
+    "dev:agent": "node dist-desktop/desktop/agent-server.js",
+    "setup:codex": "node scripts/install-codex.mjs",
+    "test:agent-native": "tsx tests/native/agent-bridge-smoke.ts",
+    "eval:codex": "tsx tests/native/codex-agent-bridge-eval.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
