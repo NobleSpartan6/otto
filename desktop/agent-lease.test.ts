@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtempSync, rmSync, readdirSync, mkdirSync, writeFileSync, chmodSync } from "node:fs";
+import { mkdtempSync, rmSync, readdirSync, mkdirSync, writeFileSync, chmodSync, readFileSync, symlinkSync, lstatSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
@@ -77,8 +77,20 @@ test("invalid lease directory and lock paths report unavailable instead of fabri
   const path = directory(t);
   const blocked = join(path, "private-path"); writeFileSync(blocked, "not a directory");
   assert.throws(() => new AgentLease({ directory: blocked }).acquire(), unavailable);
+  assert.equal(readFileSync(blocked, "utf8"), "not a directory");
   writeFileSync(join(path, "desktop.lock"), "not a directory");
   assert.throws(() => new AgentLease({ directory: path }).acquire(), unavailable);
+  assert.equal(readFileSync(join(path, "desktop.lock"), "utf8"), "not a directory");
+});
+
+test("a pre-existing symlink lock is rejected without replacing it or modifying its target", t => {
+  const path = directory(t); const target = join(path, "target"); mkdirSync(target);
+  writeFileSync(join(target, "preserved"), "unchanged");
+  const lock = join(path, "desktop.lock"); symlinkSync(target, lock, "junction");
+  assert.throws(() => new AgentLease({ directory: path }).acquire(), unavailable);
+  assert.equal(lstatSync(lock).isSymbolicLink(), true);
+  assert.deepEqual(readdirSync(target), ["preserved"]);
+  assert.equal(readFileSync(join(target, "preserved"), "utf8"), "unchanged");
 });
 
 test("filesystem access denial reports unavailable without exposing the local path", t => {

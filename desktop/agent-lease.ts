@@ -69,6 +69,12 @@ export class AgentLease {
         mkdirSync(stage, { mode: 0o700 });
         try {
           writeFileSync(join(stage, this.marker), JSON.stringify({ pid: process.pid, owner: this.marker, startedAt: new Date().toISOString() }), { flag: "wx", mode: 0o600 });
+          // Windows can replace a regular file with a renamed directory.
+          // Reject foreign path types before attempting the atomic lease claim.
+          try {
+            const destination = lstatSync(this.lock);
+            if (!destination.isDirectory() || destination.isSymbolicLink()) throw new AgentLeaseUnavailableError();
+          } catch (error) { if (errorCode(error) !== "ENOENT") throw error; }
           try {
             renameSync(stage, this.lock);
             this.held = true;
