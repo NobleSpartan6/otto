@@ -86,6 +86,22 @@
   line-height: 1.6;
   margin: 17px 0 0;
 }
+.public-agent-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 440px;
+  padding: 16px 17px;
+  margin-top: 26px;
+  border: 1px solid #dce5f6;
+  border-radius: 9px;
+  background: #f2f6ff;
+  color: var(--blue);
+}
+.public-agent-link:hover { background: #eaf1ff; }
+.public-agent-link strong { display: block; font-size: 13px; font-weight: 550; line-height: 1.6; }
+.public-agent-link span span { display: block; color: #626d7a; font-size: 12px; line-height: 1.7; margin-top: 3px; }
 .public-principles {
   display: flex;
   flex-direction: column;

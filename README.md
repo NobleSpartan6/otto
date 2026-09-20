@@ -93,6 +93,8 @@ The redesigned agent workspace follows an [assessment of Diffusion Studio's inst
 
 ## For Codex and other coding agents
 
+**[Otto for agents: overview, setup, and measured results](https://noblespartan6.github.io/otto/agents.html)** · [Use it in a running task](docs/current-task-usage.md)
+
 Otto's source-build **agent bridge** lets a coding agent inspect an explicitly scoped native app, execute a known sequence locally, and receive a compact receipt. `run_steps` makes no model calls and checks supplied final values/text against native state. `act` supports individual fresh-reference actions. Optional `delegate` lets Jev choose among the host's explicit, single-use permitted actions; it stops on uncertainty instead of inventing actions or text.
 
 The bridge is read-only unless started with `--allow-actions`. Host task authorization still applies. It supports exposed native press/fill/vertical-scroll controls and Enter/Escape/Tab; it does not yet provide arbitrary visual grounding, drag, app launch, or a browser DOM driver. See [Codex setup](docs/agent-bridge.md), the [real Codex usage comparison](docs/evaluation-codex-agent-bridge.md), [native execution evaluation](docs/evaluation-agent-bridge.md), and the [older read-only context/preparation server](docs/developer-tools.md). The installed Alpha4 app remains a separate workflow.

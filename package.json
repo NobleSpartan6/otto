@@ -17,7 +17,7 @@
     "build": "npm run build:native && vite build && tsc -p tsconfig.desktop.json",
     "start": "electron .",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.desktop.json --noEmit",
-    "test": "tsx --test core/*.test.ts desktop/*.test.ts tests/ui/*.test.ts",
+    "test": "tsx --test core/*.test.ts desktop/*.test.ts tests/ui/*.test.ts scripts/*.test.mjs",
     "test:ui": "electron tests/ui/fixture.cjs",
     "benchmark:context": "tsx scripts/benchmark-context.ts",
     "dev:tools": "node dist-desktop/desktop/developer-server.js",
@@ -28,7 +28,8 @@
     "dev:agent": "node dist-desktop/desktop/agent-server.js",
     "setup:codex": "node scripts/install-codex.mjs",
     "test:agent-native": "tsx tests/native/agent-bridge-smoke.ts",
-    "eval:codex": "tsx tests/native/codex-agent-bridge-eval.ts"
+    "eval:codex": "tsx tests/native/codex-agent-bridge-eval.ts",
+    "otto:task": "node scripts/otto-task.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

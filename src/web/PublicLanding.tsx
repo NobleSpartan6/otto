@@ -38,7 +38,7 @@ export function PublicLanding() {
           otto<span>*</span>
         </a>
         <nav aria-label="Main navigation">
-          <button onClick={() => setHelpOpen(true)}>How it works</button>
+          <a href="./agents.html">For agents <ArrowUpRight size={15} /></a>
           <ExternalLink href={SOURCE_URL}>
             GitHub
             <ArrowUpRight size={15} />
@@ -75,6 +75,10 @@ export function PublicLanding() {
           <p className="release-note">
             Alpha builds without publisher signing. Read the release notes before installing.
           </p>
+          <a className="public-agent-link" href="./agents.html">
+            <span><strong>Already working with a coding agent?</strong><span>Connect Otto’s native tools. Explore the measured method.</span></span>
+            <ArrowUpRight size={19} />
+          </a>
           <div className="public-principles">
             <div>
               <ShieldCheck size={18} />
@@ -148,6 +152,7 @@ export function PublicLanding() {
           .
         </span>
         <div>
+          <button onClick={() => setHelpOpen(true)}>How it works</button>
           <ExternalLink
             href={`${SOURCE_URL}/blob/main/docs/developer-tools.md`}
           >

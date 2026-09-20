@@ -9,7 +9,7 @@ test('default config limits scope and excludes execution and keys', () => {
   const options = parseOptions([]);
   assert.deepEqual(options.appNames, ['Otto Form Fixture', 'TextEdit']);
   const config = renderConfig(options, '/node', '/otto/server.js');
-  assert.match(config, /enabled_tools = \["list_apps", "inspect"\]/u);
+  assert.match(config, /enabled_tools = \["list_apps", "inspect", "release_control"\]/u);
   assert.ok(!config.includes('--allow-actions'));
   assert.ok(!config.includes('env_vars'));
   assert.ok(!config.includes('approval_mode'));

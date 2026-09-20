@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fcfcf9" />
+    <meta name="description" content="Give your coding agent scoped native desktop tools. Build Otto, connect Codex, and explore a measured comparison of local workflows and individual actions." />
+    <meta property="og:title" content="Otto for agents — Keep the steps local." />
+    <meta property="og:description" content="Scoped desktop tools, checked results, and an open-source method. Explore the measured six-field Mac comparison and connect Codex." />
+    <meta property="og:type" content="website" />
+    <title>Otto for agents — Keep the steps local.</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <style>
+      :root { color-scheme: light; --paper:#fcfcf9; --ink:#20292a; --muted:#626d70; --line:#dfe5df; --blue:#155eef; --wash:#eef3ff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); font-synthesis:none; }
+      * { box-sizing:border-box; }
+      body { margin:0; min-width:320px; }
+      a { color:inherit; text-decoration:none; }
+      button { font:inherit; cursor:pointer; }
+      a,button,summary { -webkit-tap-highlight-color:transparent; outline-offset:4px; }
+      :focus-visible { outline:2px solid var(--blue); }
+      button:disabled { cursor:wait; }
+      svg { flex-shrink:0; }
+      ::selection { background:#dae6ff; }
+      .shell { width:min(1120px,calc(100% - 96px)); margin:0 auto; }
+      .skip { position:absolute; left:16px; top:-70px; padding:12px 18px; background:var(--blue); color:white; z-index:2; border-radius:6px; }
+      .skip:focus { top:12px; }
+      header { border-bottom:1px solid var(--line); }
+      .header-inner { min-height:84px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+      .brand { display:inline-flex; align-items:flex-start; font-size:42px; font-weight:700; line-height:1; letter-spacing:-3.5px; padding-bottom:4px; color:#14191e; }
+      .brand span { font-size:37px; line-height:.9; letter-spacing:-1px; margin-left:2px; color:var(--blue); }
+      nav { display:flex; gap:28px; align-items:center; font-size:13px; color:var(--muted); }
+      nav a { display:inline-flex; align-items:center; gap:5px; padding:8px 0; }
+      nav a:hover,.inline-link:hover { color:var(--blue); }
+      .nav-current { color:var(--blue); }
+      .hero { display:grid; grid-template-columns:1.18fr 1fr; align-items:center; gap:72px; padding:83px 0 66px; }
+      .eyebrow { display:flex; align-items:center; gap:10px; font-size:11px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--muted); margin:0 0 23px; }
+      .eyebrow::before { content:""; width:7px; height:7px; background:var(--blue); border-radius:50%; }
+      h1 { font-size:clamp(38px,4.6vw,57px); font-weight:500; letter-spacing:-2.6px; line-height:1.08; margin:0 0 24px; }
+      .hero-copy { font-size:17px; line-height:1.75; color:var(--muted); max-width:440px; margin:0 0 28px; }
+      .actions { display:flex; flex-wrap:wrap; gap:12px 23px; align-items:center; }
+      .button { display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:13px 17px; min-height:45px; border-radius:7px; font-size:13px; font-weight:500; }
+      .button-primary { color:white; background:var(--blue); border:1px solid var(--blue); }
+      .button-primary:hover { background:#0e4ed1; }
+      .inline-link { display:inline-flex; align-items:center; gap:6px; font-size:13px; }
+      .hero-note { font-size:12px; color:var(--muted); line-height:1.6; margin:19px 0 0; }
+      .workflow { border:1px solid var(--line); border-radius:14px; background:white; box-shadow:0 10px 40px #26342805; overflow:hidden; }
+      .workflow-top { display:flex; align-items:center; gap:6px; border-bottom:1px solid var(--line); padding:13px 17px; color:var(--muted); font-size:11px; background:#f6f8f4; }
+      .window-dot { width:7px; height:7px; border-radius:50%; background:#d9e1d6; }
+      .workflow-top .caption { margin-left:9px; }
+      .workflow-body { padding:28px; }
+      .flow-node { display:flex; align-items:center; gap:13px; }
+      .node-icon { width:39px; height:39px; border:1px solid var(--line); border-radius:10px; display:flex; justify-content:center; align-items:center; color:#66756b; }
+      .node-icon.otto-icon { color:var(--blue); background:var(--wash); border-color:#dce6ff; font-size:33px; padding-top:11px; font-weight:600; }
+      .flow-node strong { display:block; font-size:14px; font-weight:550; }
+      .flow-node p { color:var(--muted); font-size:12px; line-height:1.5; margin:4px 0 0; }
+      .flow-connector { height:26px; border-left:1px dashed #bac6bf; margin:6px 0 6px 19px; }
+      .workflow-receipt { margin-top:22px; padding:14px 15px; border:1px solid #dbe8dc; border-radius:8px; background:#f6faf4; display:flex; align-items:center; gap:10px; color:#406145; }
+      .workflow-receipt strong { display:block; font-size:12px; font-weight:550; }
+      .workflow-receipt span { display:block; font-size:11px; line-height:1.5; color:#5d705f; margin-top:3px; }
+      .section { padding:57px 0; border-top:1px solid var(--line); scroll-margin-top:24px; }
+      .section-label { margin:0 0 15px; color:var(--blue); font-size:11px; letter-spacing:1.3px; font-weight:600; text-transform:uppercase; }
+      h2 { margin:0; font-size:32px; line-height:1.15; font-weight:500; letter-spacing:-1.15px; text-wrap:balance; }
+      .section-intro { color:var(--muted); line-height:1.75; font-size:15px; max-width:640px; margin:15px 0 0; }
+      .evidence { display:grid; grid-template-columns:.85fr 1.5fr; gap:64px; }
+      .number { font-size:73px; line-height:1; font-weight:450; letter-spacing:-4px; color:var(--blue); margin:24px 0 12px; font-variant-numeric:tabular-nums; }
+      .number-label { font-size:17px; line-height:1.5; margin:0; max-width:240px; }
+      .evidence-caption { font-size:12px; line-height:1.7; color:var(--muted); max-width:275px; margin:14px 0 0; }
+      .comparison { align-self:center; }
+      .comparison-title { font-size:12px; color:var(--muted); margin:0 0 21px; }
+      .bar-row { margin-bottom:22px; }
+      .bar-label { display:flex; justify-content:space-between; gap:16px; font-size:13px; margin-bottom:10px; }
+      .bar-label strong { font-weight:550; font-variant-numeric:tabular-nums; }
+      .bar-track { height:11px; background:#edf0eb; border-radius:3px; overflow:hidden; }
+      .bar { height:100%; background:#bdc8bd; border-radius:3px; }
+      .bar-otto { width:27.69%; background:var(--blue); }
+      .stats { margin:28px 0 0; border-top:1px solid var(--line); }
+      .stat { display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:12px 0; border-bottom:1px solid var(--line); font-size:12px; }
+      .stat dt { color:var(--muted); }
+      .stat dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; font-weight:500; }
+      .stat dd small { display:block; font-size:11px; color:var(--muted); font-weight:400; margin-top:4px; }
+      .evidence-bottom { grid-column:1/-1; margin-top:-37px; display:flex; justify-content:space-between; align-items:start; gap:24px; }
+      .evidence-bottom p { font-size:12px; line-height:1.7; color:var(--muted); margin:0; max-width:700px; }
+      .evidence-bottom a { white-space:nowrap; margin-top:2px; color:var(--blue); }
+      .how-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:30px; margin-top:32px; }
+      .how-grid article { padding-right:15px; }
+      .step-icon { color:var(--blue); margin-bottom:14px; }
+      h3 { font-size:16px; line-height:1.4; font-weight:550; letter-spacing:-.2px; margin:0 0 9px; }
+      .how-grid p { color:var(--muted); font-size:13px; line-height:1.75; margin:0; }
+      code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:.92em; }
+      p code,dd code { color:#38577c; background:#edf2f8; border-radius:4px; padding:1px 4px; overflow-wrap:anywhere; }
+      .quickstart { display:grid; grid-template-columns:.72fr 1.3fr; gap:66px; }
+      .setup-info { max-width:290px; }
+      .setup-info .section-intro { font-size:14px; }
+      .setup-requirements { margin:27px 0 0; padding:0; list-style:none; color:var(--muted); font-size:12px; line-height:1.7; }
+      .setup-requirements li { padding:8px 0; display:flex; gap:9px; align-items:flex-start; }
+      .setup-requirements svg { margin-top:3px; color:#57715c; }
+      .setup-steps { min-width:0; }
+      .setup-step + .setup-step { margin-top:30px; }
+      .step-heading { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+      .step-heading span { height:24px; width:24px; display:inline-flex; justify-content:center; align-items:center; border:1px solid #dce3d9; border-radius:50%; font-size:11px; color:var(--muted); }
+      .step-heading h3 { font-size:14px; margin:0; }
+      .terminal { border:1px solid #dce2df; border-radius:9px; overflow:hidden; background:#fff; }
+      .terminal-heading { display:flex; align-items:center; justify-content:space-between; min-height:38px; padding:0 13px; border-bottom:1px solid #e8ece7; color:var(--muted); font-size:10px; letter-spacing:.4px; }
+      .copy { border:0; background:transparent; color:#52666b; display:inline-flex; align-items:center; gap:5px; padding:8px 3px; font-size:11px; letter-spacing:0; min-width:52px; justify-content:flex-end; }
+      .copy:hover { color:var(--blue); }
+      pre { margin:0; padding:16px; color:#314449; font-size:12px; line-height:1.9; overflow:auto; max-width:100%; tab-size:2; }
+      pre:focus-visible { outline-offset:-3px; }
+      .setup-step > p { font-size:12px; color:var(--muted); line-height:1.75; margin:10px 0 0; }
+      .setup-step > p a { color:var(--blue); text-decoration:underline; text-underline-offset:3px; }
+      .setup-step > p strong { color:var(--ink); font-weight:550; }
+      .manual-note { border-left:2px solid #afc5ee; padding-left:12px; }
+      details { margin-top:21px; font-size:12px; color:var(--muted); line-height:1.8; }
+      summary { cursor:pointer; color:var(--ink); font-weight:500; padding:5px 0; width:fit-content; }
+      details p { margin:9px 0; }
+      details pre { border:1px solid var(--line); border-radius:7px; background:white; margin:10px 0; }
+      .boundaries { display:grid; grid-template-columns:1fr 1fr; gap:50px; }
+      .boundaries h3 { font-size:15px; }
+      .boundaries p { font-size:13px; color:var(--muted); line-height:1.8; margin:0; }
+      .closing { background:#f1f5ee; border:1px solid #dfe7d9; border-radius:12px; padding:29px 32px; display:flex; align-items:center; justify-content:space-between; gap:28px; margin:4px 0 58px; }
+      .closing h2 { font-size:23px; letter-spacing:-.65px; }
+      .closing p { color:var(--muted); font-size:13px; line-height:1.7; margin:8px 0 0; }
+      .closing .actions { flex-shrink:0; }
+      .button-outline { border:1px solid #cad5c7; background:transparent; }
+      .button-outline:hover { background:white; }
+      footer { border-top:1px solid var(--line); padding:24px 0; color:var(--muted); font-size:11px; }
+      .footer-inner { display:flex; justify-content:space-between; flex-wrap:wrap; gap:17px; align-items:center; }
+      .footer-links { display:flex; gap:22px; }
+      .footer-links a:hover { color:var(--blue); }
+      .status { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); max-width:calc(100% - 32px); background:#22342b; color:white; font-size:12px; line-height:1.6; border-radius:8px; padding:10px 16px; box-shadow:0 5px 25px #10281b1c; z-index:3; }
+      .status:empty { display:none; }
+      @media(max-width:900px) {
+        .shell { width:calc(100% - 64px); }
+        .hero { gap:35px; padding:63px 0 53px; }
+        h1 { font-size:43px; letter-spacing:-1.8px; }
+        .hero-copy { font-size:15px; }
+        .workflow-body { padding:24px; }
+        .evidence { gap:38px; grid-template-columns:.8fr 1.3fr; }
+        .number { font-size:63px; }
+        .evidence-bottom { margin-top:-12px; }
+        .quickstart { gap:38px; }
+        .how-grid { gap:22px; }
+        .closing { padding:25px; }
+      }
+      @media(max-width:680px) {
+        .shell { width:calc(100% - 44px); }
+        .header-inner { min-height:73px; gap:18px; }
+        .brand { font-size:36px; letter-spacing:-3px; }
+        .brand span { font-size:33px; }
+        nav { gap:19px; font-size:12px; }
+        nav .nav-current { display:none; }
+        .hero { grid-template-columns:1fr; padding:43px 0; gap:34px; }
+        h1 { font-size:43px; line-height:1.09; letter-spacing:-1.9px; }
+        .eyebrow { font-size:10px; margin-bottom:20px; }
+        .hero-copy { font-size:16px; margin-bottom:24px; }
+        .hero-note { font-size:11px; }
+        .workflow-body { padding:23px; }
+        .section { padding:38px 0; }
+        h2 { font-size:28px; }
+        .evidence,.quickstart { grid-template-columns:1fr; gap:29px; }
+        .number { font-size:70px; margin-top:18px; }
+        .number-label { max-width:none; font-size:17px; }
+        .evidence-caption { max-width:none; margin-top:8px; }
+        .evidence-bottom { display:block; margin-top:-5px; }
+        .evidence-bottom a { margin-top:16px; }
+        .how-grid { grid-template-columns:1fr; gap:26px; margin-top:27px; }
+        .how-grid article { padding:0 0 0 38px; position:relative; }
+        .step-icon { position:absolute; top:0; left:0; }
+        .setup-info { max-width:none; }
+        .setup-requirements { margin-top:17px; }
+        .setup-requirements li { padding:5px 0; }
+        pre { font-size:11px; padding:13px; }
+        .boundaries { grid-template-columns:1fr; gap:25px; }
+        .closing { display:block; padding:25px 23px; margin:0 0 35px; }
+        .closing .actions { margin-top:20px; }
+        .footer-inner { align-items:flex-start; }
+        .footer-links { gap:18px; flex-wrap:wrap; }
+      }
+      @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; transition:none!important; } }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header>
+      <div class="shell header-inner">
+        <a class="brand" href="./" aria-label="Otto home">otto<span>*</span></a>
+        <nav aria-label="Main navigation">
+          <a class="nav-current" href="./agents.html" aria-current="page">For agents</a>
+          <a href="#results">The results</a>
+          <a href="https://github.com/NobleSpartan6/otto">GitHub <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
+    </header>
+    <main class="shell" id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <p class="eyebrow">Otto for agents · source build</p>
+          <h1 id="hero-title">Your agent thinks.<br />Otto handles<br />the steps.</h1>
+          <p class="hero-copy">Give your coding agent scoped native desktop tools. Keep intermediate steps local and bring back checked results.</p>
+          <div class="actions">
+            <a class="button button-primary" href="#quickstart">Connect Codex <span aria-hidden="true">→</span></a>
+            <a class="inline-link" href="https://github.com/NobleSpartan6/otto/blob/main/docs/agent-bridge.md">Read the method <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="hero-note">Open source. Local MCP. macOS &amp; Windows.<br />Exact workflows need no extra model key.</p>
+        </div>
+        <div class="workflow" aria-label="How the agent bridge works">
+          <div class="workflow-top"><span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span><span class="caption">A shorter path from task to result</span></div>
+          <div class="workflow-body">
+            <div class="flow-node"><div class="node-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m6 7 4 5-4 5m7 0h5"/></svg></div><div><strong>Your coding agent</strong><p>Plans the task. Defines the allowed steps.</p></div></div>
+            <div class="flow-connector" aria-hidden="true"></div>
+            <div class="flow-node"><div class="node-icon otto-icon" aria-hidden="true">*</div><div><strong>Otto</strong><p>Runs local steps. Checks fresh native state.</p></div></div>
+            <div class="flow-connector" aria-hidden="true"></div>
+            <div class="flow-node"><div class="node-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-13 5h8m-8 3h5"/></svg></div><div><strong>Your selected app</strong><p>Native controls. Explicit completion checks.</p></div></div>
+            <div class="workflow-receipt"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><div><strong>A compact receipt comes back</strong><span>Verified checks, actions taken, or a reason to stop.</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section evidence" id="results" aria-labelledby="results-title">
+        <div>
+          <p class="section-label">Measured, not estimated</p>
+          <h2 id="results-title">Less back-and-forth.</h2>
+          <div class="number">72.31<span style="font-size:.65em">%</span></div>
+          <p class="number-label">fewer reported input tokens<br />in one measured task.</p>
+          <p class="evidence-caption">Including cached input. Two fresh Codex runs filled the same six-field Mac fixture.</p>
+        </div>
+        <div class="comparison">
+          <p class="comparison-title">Reported Codex input tokens · lower is fewer</p>
+          <div class="bar-row"><div class="bar-label"><span>Inspect + six individual actions</span><strong>191,645</strong></div><div class="bar-track" aria-hidden="true"><div class="bar"></div></div></div>
+          <div class="bar-row"><div class="bar-label"><span>One Otto workflow</span><strong>53,072</strong></div><div class="bar-track" aria-hidden="true"><div class="bar bar-otto"></div></div></div>
+          <dl class="stats">
+            <div class="stat"><dt>Uncached input tokens</dt><dd>27,037 → 18,384<small>32.00% fewer</small></dd></div>
+            <div class="stat"><dt>Host tool calls</dt><dd>7 → 1</dd></div>
+            <div class="stat"><dt>Independently correct fields</dt><dd>6 / 6 in both runs</dd></div>
+          </dl>
+        </div>
+        <div class="evidence-bottom"><p>One authored task, one trial per strategy, on macOS. Input includes cache; order and caching effects were not controlled. These are reported usage counters, not billed savings or a general performance claim. Neither workflow called Jev or another model inside Otto.</p><a class="inline-link" href="https://github.com/NobleSpartan6/otto/blob/main/docs/evaluation-codex-agent-bridge.md">See the full evaluation <span aria-hidden="true">↗</span></a></div>
+      </section>
+
+      <section class="section" aria-labelledby="method-title">
+        <p class="section-label">The method</p><h2 id="method-title">Keep the loop close to the work.</h2>
+        <div class="how-grid">
+          <article><svg class="step-icon" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8m-8 4h5m-5 4h3"/></svg><h3>Send the useful context.</h3><p><code>inspect</code> returns compact app text and fresh control references. The host agent decides what belongs in the task.</p></article>
+          <article><svg class="step-icon" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 5h14M5 12h14M5 19h14"/><circle cx="8" cy="5" r="2" fill="var(--paper)"/><circle cx="16" cy="12" r="2" fill="var(--paper)"/><circle cx="10" cy="19" r="2" fill="var(--paper)"/></svg><h3>Delegate a bounded sequence.</h3><p><code>run_steps</code> executes up to 16 exact steps locally. For semantic selection, optional <code>delegate</code> lets Jev choose from explicitly allowed actions.</p></article>
+          <article><svg class="step-icon" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m12 3 8 4v5c0 5-8 9-8 9s-8-4-8-9V7l8-4Z"/><path d="m8 12 3 3 5-6"/></svg><h3>Return what was checked.</h3><p>Native value or text checks support a verified receipt. Partial work and uncertainty return to the host. No automatic submit is added.</p></article>
+        </div>
+      </section>
+
+      <section class="section quickstart" id="quickstart" aria-labelledby="setup-title">
+        <div class="setup-info">
+          <p class="section-label">Try it locally</p><h2 id="setup-title">A small bridge.<br />Your existing agent.</h2>
+          <p class="section-intro">Build Otto on the computer you want to control, then connect its MCP server to Codex.</p>
+          <ul class="setup-requirements">
+            <li><span aria-hidden="true">✓</span> Node 24+ and native build tools</li>
+            <li><span aria-hidden="true">✓</span> A local Mac or Windows desktop</li>
+            <li><span aria-hidden="true">✓</span> Explicit app scope and OS permissions</li>
+          </ul>
+          <p class="section-intro"><a class="inline-link" href="https://github.com/NobleSpartan6/otto#getting-started">Platform prerequisites <span aria-hidden="true">↗</span></a></p>
+          <p class="section-intro"><a class="inline-link" href="https://github.com/NobleSpartan6/otto/blob/main/docs/current-task-usage.md">Already in a running task? <span aria-hidden="true">↗</span></a></p>
+        </div>
+        <div class="setup-steps">
+          <div class="setup-step">
+            <div class="step-heading"><span>1</span><h3>Build from source</h3></div>
+            <div class="terminal"><div class="terminal-heading"><span>TERMINAL</span><button class="copy" data-copy-target="build-command" data-copy-label="Build commands" aria-label="Copy build commands"><span aria-hidden="true">⧉</span><span class="copy-label">Copy</span></button></div><pre tabindex="0" aria-label="Build commands"><code id="build-command">git clone https://github.com/NobleSpartan6/otto.git
+cd otto
+npm ci
+npm run build</code></pre></div>
+            <p>The agent bridge runs from this checkout. The installed desktop alpha is a separate workflow.</p>
+          </div>
+          <div class="setup-step">
+            <div class="step-heading"><span>2</span><h3>Generate your connection settings</h3></div>
+            <div class="terminal"><div class="terminal-heading"><span>TERMINAL</span><button class="copy" data-copy-target="setup-command" data-copy-label="Setup command" aria-label="Copy setup command"><span aria-hidden="true">⧉</span><span class="copy-label">Copy</span></button></div><pre tabindex="0" aria-label="Setup command"><code id="setup-command">npm run setup:codex -- --allow-actions --trust-actions</code></pre></div>
+            <p class="manual-note"><strong>This prints configuration; it does not install it.</strong> Review and merge the generated table into your trusted project’s <code>.codex/config.toml</code>. Keep one <code>mcp_servers.otto</code> entry. Reload the MCP connection and verify its tools before use.</p>
+            <p>The default scope is <strong>Otto Form Fixture</strong> and <strong>TextEdit</strong>. <code>--trust-actions</code> preapproves <code>act</code> and <code>run_steps</code> tool calls inside that scope; the host still follows your task authorization. Omit it to keep normal host approval. On Windows, choose the exact name or ID of your intended running app.</p>
+            <details><summary>Choose different apps or enable Jev</summary><p>Discover running apps, then generate settings for up to four exact names or IDs. An app name can resolve to a new process after restart; use a PID when you need one specific launch.</p><pre tabindex="0" aria-label="App discovery and scope commands"><code>node dist-desktop/desktop/agent-server.js --list-apps
+npm run setup:codex -- --help
+npm run setup:codex -- --app-name "Your app" --allow-actions</code></pre><p>Exact actions and <code>run_steps</code> need no model key. Live Jev selection through <code>delegate</code> requires <code>TYPESAFE_API_KEY</code> in the MCP host environment. <code>--forward-typesafe-key</code> prints the variable name for forwarding; it never reads or prints the key. It does not reuse a key saved in the desktop app.</p></details>
+          </div>
+          <div class="setup-step">
+            <div class="step-heading"><span>3</span><h3>Start with the disposable Mac fixture</h3></div>
+            <div class="terminal"><div class="terminal-heading"><span>TERMINAL · macOS</span><button class="copy" data-copy-target="fixture-command" data-copy-label="Fixture command" aria-label="Copy fixture command"><span aria-hidden="true">⧉</span><span class="copy-label">Copy</span></button></div><pre tabindex="0" aria-label="Fixture command"><code id="fixture-command">npm run demo:form</code></pre></div>
+            <p>Ask Codex to use Otto to fill the fixture with the literal values printed by the launcher, verify the fields, and stop without submitting. Grant native Accessibility to the actual launch context if needed. On Windows, use an app you intend to test; this fixture and the published usage comparison are macOS-only.</p>
+            <p><a href="https://github.com/NobleSpartan6/otto/blob/main/docs/agent-bridge.md">Full setup, permissions, and troubleshooting ↗</a></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section boundaries" aria-label="Current scope and control">
+        <div><h3>Useful today. Explicit about its edges.</h3><p>The bridge supports exposed native press, fill, and vertical-scroll controls, plus Enter, Escape, and Tab. Arbitrary visual grounding, drag, app launch, and a browser DOM driver are not available yet. Jev selects supplied actions; it does not generate typing text.</p></div>
+        <div><h3>Your scope stays in charge.</h3><p>Only launcher-selected apps are exposed. Run one desktop executor at a time. Selected app text goes to your host agent and may reach its model provider. “Verified” covers the supplied native checks; it does not prove that a file was saved or a remote change persisted.</p></div>
+      </section>
+      <section class="closing" aria-label="Explore the open-source project"><div><h2>Inspect it. Try it. Make it better.</h2><p>The method, implementation, and evaluation are open.</p></div><div class="actions"><a class="button button-outline" href="https://github.com/NobleSpartan6/otto">Explore the source <span aria-hidden="true">↗</span></a><button class="inline-link copy-page" type="button" style="background:none;border:0;padding:8px 0">Share this method <span aria-hidden="true">↗</span></button></div></section>
+    </main>
+    <footer><div class="shell footer-inner"><span>otto* · Open source under MIT. Early development alpha.</span><div class="footer-links"><a href="./">Desktop app</a><a href="https://github.com/NobleSpartan6/otto/blob/main/README.md">README</a><a href="https://github.com/NobleSpartan6/otto/blob/main/docs/evaluation-codex-agent-bridge.md">Evaluation</a></div></div></footer>
+    <div class="status" role="status" aria-live="polite"></div>
+    <script>
+      const status = document.querySelector('.status');
+      let statusTimer;
+      function announce(message) {
+        clearTimeout(statusTimer);
+        status.textContent = message;
+        statusTimer = setTimeout(() => { status.textContent = ''; }, 5000);
+      }
+      for (const button of document.querySelectorAll('[data-copy-target]')) {
+        button.addEventListener('click', async () => {
+          button.disabled = true;
+          try {
+            await navigator.clipboard.writeText(document.getElementById(button.dataset.copyTarget).textContent.trim());
+            button.querySelector('.copy-label').textContent = 'Copied';
+            announce(button.dataset.copyLabel + ' copied.');
+            setTimeout(() => { button.querySelector('.copy-label').textContent = 'Copy'; }, 2500);
+          } catch { announce('Copy is unavailable. Select the command text to copy it.'); }
+          finally { button.disabled = false; }
+        });
+      }
+      document.querySelector('.copy-page').addEventListener('click', async () => {
+        try {
+          const link = new URL(window.location.href);
+          link.hash = ''; link.search = '';
+          await navigator.clipboard.writeText(link.href);
+          announce('Method link copied.');
+        } catch { announce('Copy this page’s address from your browser to share it.'); }
+      });
+    </script>
+  </body>
+</html>

@@ -44,7 +44,7 @@ export function renderConfig(options, nodePath, serverPath) {
   for (const name of options.appNames) args.push('--app-name', name);
   for (const id of options.appIds) args.push('--app', id);
   if (options.allowActions) args.push('--allow-actions');
-  const tools = options.allowActions ? ['list_apps', 'inspect', 'act', 'run_steps', 'delegate'] : ['list_apps', 'inspect'];
+  const tools = options.allowActions ? ['list_apps', 'inspect', 'act', 'run_steps', 'delegate', 'release_control'] : ['list_apps', 'inspect', 'release_control'];
   return [
     '[mcp_servers.otto]',
     `command = ${tomlString(nodePath)}`,

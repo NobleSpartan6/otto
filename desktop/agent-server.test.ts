@@ -4,6 +4,11 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createAgentServer, type AgentServerOptions } from "./agent-server.js";
 import type { NativeAction, NativeDriver, NativeSnapshot } from "../shared/types.js";
+import { AgentLease } from "./agent-lease.js";
+import fs, { mkdtempSync, rmSync, writeFileSync, readdirSync } from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 class Driver implements NativeDriver {
   app = { id: "fixture", name: "Fixture", pid: 123 };
@@ -51,22 +56,24 @@ function metadata(result: unknown) {
   return text(result).split("\n").filter(line => line.startsWith("{")).map(line => JSON.parse(line)).find(value => typeof value.snapshotToken === "string");
 }
 const isError = (result: unknown) => (result as { isError?: boolean }).isError === true;
-async function setup(t: TestContext, options: Partial<AgentServerOptions> = {}) {
+async function setup(t: TestContext, options: Partial<AgentServerOptions> = {}, sharedLeasePath?: string, idleMs?: number) {
   const driver = new Driver();
-  const { server, stop } = await createAgentServer(driver, { appIds: ["fixture"], appNames: [], allowActions: true, ...options });
+  const leasePath = sharedLeasePath ?? mkdtempSync(join(tmpdir(), "otto-agent-server-test-"));
+  const lease = new AgentLease({ directory: leasePath, idleMs });
+  const { server, stop } = await createAgentServer(driver, { appIds: ["fixture"], appNames: [], allowActions: true, ...options }, lease);
   const client = new Client({ name: "test-otto-agent", version: "1" }, { capabilities: {} });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   await client.connect(clientTransport);
-  t.after(async () => { stop(); await client.close(); await server.close(); });
+  t.after(async () => { stop(); await client.close(); await server.close(); if (!sharedLeasePath) rmSync(leasePath, { recursive: true, force: true }); });
   const call = (name: string, args: Record<string, unknown> = {}) => client.callTool({ name, arguments: args });
-  return { driver, client, call };
+  return { driver, client, call, stop, lease };
 }
 
 test("read-only manifest and launcher authority cannot be expanded by a tool request", async t => {
   const { driver, client, call } = await setup(t, { allowActions: false });
   const manifest = await client.listTools();
-  assert.deepEqual(manifest.tools.map(tool => tool.name), ["list_apps", "inspect"]);
+  assert.deepEqual(manifest.tools.map(tool => tool.name), ["list_apps", "inspect", "release_control"]);
   assert.ok(manifest.tools.every(tool => tool.annotations?.readOnlyHint === true));
   for (const name of ["act", "run_steps", "delegate"]) {
     const result = await call(name, { allowActions: true });
@@ -214,4 +221,90 @@ test("MCP cancellation during fresh observation revokes refs before dispatch", a
   assert.equal(driver.actions.length, 0);
   assert.ok(driver.cancelled > 0);
   assert.equal(isError(await call("act", args)), true);
+});
+
+test("MCP clients share ownership until release; workflows release automatically", async t => {
+  const directory = mkdtempSync(join(tmpdir(), "otto-shared-lease-test-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const one = await setup(t, {}, directory); const two = await setup(t, {}, directory);
+  const initial = metadata(await one.call("inspect", { appId: "fixture" }));
+  const blocked = await two.call("inspect", { appId: "fixture" });
+  assert.equal(isError(blocked), true); assert.equal(JSON.parse(text(blocked)).code, "desktop_busy");
+  assert.equal(two.driver.observed, 0);
+  assert.equal(isError(await two.call("list_apps")), false);
+  await two.call("release_control");
+  assert.equal(JSON.parse(text(await two.call("inspect", { appId: "fixture" }))).code, "desktop_busy");
+  await one.call("release_control");
+  const result = await two.call("run_steps", { appId: "fixture", steps: [{ operation: "fill", label: "Name", value: "Ada" }], expected: { values: { Name: "Ada" } } });
+  assert.equal(JSON.parse(text(result)).status, "verified");
+  const stale = await one.call("act", { snapshotToken: initial.snapshotToken, ref: "c1", operation: "fill", value: "Stale" });
+  assert.equal(isError(stale), true); assert.equal(one.driver.actions.length, 0);
+  assert.equal(isError(await two.call("inspect", { appId: "fixture" })), false);
+});
+
+test("idle expiry invalidates refs, and failed requests release control", async t => {
+  const directory = mkdtempSync(join(tmpdir(), "otto-shared-idle-test-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const one = await setup(t, {}, directory, 10); const two = await setup(t, {}, directory);
+  const initial = metadata(await one.call("inspect", { appId: "fixture" }));
+  await new Promise(resolve => setTimeout(resolve, 25));
+  assert.equal(isError(await one.call("act", { snapshotToken: initial.snapshotToken, ref: "c1", operation: "fill", value: "Stale" })), true);
+  assert.equal(one.driver.actions.length, 0);
+  assert.equal(isError(await two.call("inspect", { appId: "fixture" })), false);
+  assert.equal(isError(await two.call("act", { snapshotToken: "invalid", ref: "c1", operation: "fill", value: "No" })), true);
+  assert.equal(isError(await one.call("inspect", { appId: "fixture" })), false);
+});
+
+test("cancel retains ownership until pending native work settles", async t => {
+  const directory = mkdtempSync(join(tmpdir(), "otto-shared-cancel-test-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const one = await setup(t, {}, directory); const two = await setup(t, {}, directory);
+  const snapshot = metadata(await one.call("inspect", { appId: "fixture" }));
+  let enter!: () => void, finish!: () => void;
+  const entered = new Promise<void>(resolve => { enter = resolve; }); const gate = new Promise<void>(resolve => { finish = resolve; });
+  one.driver.beforeObserve = async count => { if (count === 2) { enter(); await gate; } };
+  const controller = new AbortController();
+  const pending = one.client.callTool({ name: "act", arguments: { snapshotToken: snapshot.snapshotToken, ref: "c1", operation: "fill", value: "No" } }, undefined, { signal: controller.signal });
+  await entered; controller.abort(); await assert.rejects(pending);
+  const blocked = await two.call("inspect", { appId: "fixture" });
+  assert.equal(JSON.parse(text(blocked)).code, "desktop_busy");
+  finish(); await one.call("list_apps");
+  assert.equal(one.driver.actions.length, 0);
+  assert.equal(isError(await two.call("inspect", { appId: "fixture" })), false);
+});
+
+test("lease filesystem failures return desktop_unavailable before native inspection", async t => {
+  const directory = mkdtempSync(join(tmpdir(), "otto-agent-io-test-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const file = join(directory, "private-path"); writeFileSync(file, "not a directory");
+  const { driver, call } = await setup(t, {}, file);
+  const result = await call("inspect", { appId: "fixture" });
+  assert.equal(isError(result), true); assert.equal(JSON.parse(text(result)).code, "desktop_unavailable");
+  assert.doesNotMatch(text(result), /otto-agent-io-test|private-path|Another Otto/);
+  assert.equal(driver.observed, 0); assert.equal(driver.actions.length, 0);
+});
+
+test("release_control reports failed removal, preserves ownership, and stop does not throw", async t => {
+  const directory = mkdtempSync(join(tmpdir(), "otto-release-failure-test-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const one = await setup(t, {}, directory); const two = await setup(t, {}, directory);
+  const before = metadata(await one.call("inspect", { appId: "fixture" }));
+  const marker = join(directory, "desktop.lock", readdirSync(join(directory, "desktop.lock"))[0]!);
+  const unlink = fs.unlinkSync;
+  t.mock.method(fs, "unlinkSync", value => {
+    if (String(value) === marker) throw Object.assign(new Error("private-path denial"), { code: "EACCES" });
+    return unlink(value);
+  });
+  syncBuiltinESMExports();
+  try {
+    const result = await one.call("release_control");
+    assert.equal(isError(result), true); assert.equal(JSON.parse(text(result)).code, "desktop_unavailable");
+    assert.doesNotMatch(text(result), /released|private-path/);
+    assert.equal(JSON.parse(text(await two.call("inspect", { appId: "fixture" }))).code, "desktop_busy");
+    assert.equal(isError(await one.call("act", { snapshotToken: before.snapshotToken, ref: "c1", operation: "fill", value: "Stale" })), true);
+    assert.equal(one.driver.actions.length, 0);
+    assert.doesNotThrow(() => one.stop());
+    assert.equal(JSON.parse(text(await two.call("inspect", { appId: "fixture" }))).code, "desktop_busy");
+  } finally { t.mock.restoreAll(); syncBuiltinESMExports(); one.lease.release(); }
+  assert.equal(isError(await two.call("inspect", { appId: "fixture" })), false);
 });

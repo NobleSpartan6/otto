@@ -2,6 +2,8 @@
 
 The native agent bridge is separate from the older read-only [developer context server](developer-tools.md). It runs locally over MCP stdio; it does not require an HTTP service. Start with the disposable **Otto Form Fixture** and **TextEdit** scope, then deliberately choose other apps for later tasks.
 
+Share the [Otto for agents page](https://noblespartan6.github.io/otto/agents.html) for an overview and setup. For a task that is already running and cannot reload its MCP catalog, use the [current-task CLI adapter](current-task-usage.md). Both interfaces use the same scoped executor.
+
 The interaction takes inspiration from [AI Builder Club's Jev browser demonstration](https://x.com/aibuilderclub_/status/2101316543317684368): give an agent a task and move the intermediate action loop into a worker. The post was inspected in the signed-in browser on September 19, 2026. Its video shows website navigation; it does not establish its source implementation, token savings, or general desktop reliability. Otto's implementation here is independent and uses its existing native adapters.
 
 ## Build and review setup
@@ -18,7 +20,7 @@ node scripts/install-codex.mjs
 
 The setup script checks the built server and platform helper paths, then prints a TOML table for the current project's `.codex/config.toml`. It **writes no configuration** and does not inspect app contents, request native permissions, or read keys. If a project already has a configuration, merge the table without duplicating an existing `mcp_servers.otto` entry. Keep project-specific paths and scope local; do not commit a user's configuration.
 
-The default generated scope is the exact names `Otto Form Fixture` and `TextEdit`, with only `list_apps` and `inspect` enabled. Override it explicitly with repeated `--app-name` or `--app` arguments, up to four apps. For example:
+The default generated scope is the exact names `Otto Form Fixture` and `TextEdit`, with `list_apps`, `inspect`, and `release_control` enabled. Override it explicitly with repeated `--app-name` or `--app` arguments, up to four apps. For example:
 
 ```sh
 node scripts/install-codex.mjs --app-name "Otto Form Fixture" --app-name "TextEdit"
@@ -48,8 +50,13 @@ This emits `mcp_servers.otto.tools.act.approval_mode = "approve"` and the equiva
 | `act` | Uses the latest snapshot token and a control ref, except bounded `enter`, `escape`, or `tab` keys. A fill verifies its native value; press, scroll, and key report dispatch. |
 | `run_steps` | Runs 1–16 exact steps locally, with no model call. Native operations are `press`, `fill`, `scrollUp`, `scrollDown`, and `key`. Optional `expected.values` or `expected.textIncludes` checks determine verified completion. |
 | `delegate` | Jev chooses only from supplied `allowedActions` within one app. Exact `expected` checks are required. The default action budget is eight, with a maximum of 16. Supplied literals are used; no hidden planner generates text. |
+| `release_control` | Ends this connection's interactive desktop lease and invalidates its refs. It cannot release a different connection's lease. Available in read-only mode too. |
 
 Workflow receipts distinguish `completed` steps from `verified` explicit checks and `stopped` partial work. The caller chooses the checks, so a matched text string does not prove a file was saved, a remote change persisted, or the whole goal succeeded. `actions` and `completedSteps` are numeric counts. Preserve any `uncertainAction`, failed checks, and reason when reporting the result. Calls have a 120-second server deadline; the generated host timeout leaves an additional 30 seconds for cleanup and the result. Run calls serially on one interactive desktop.
+
+Current Otto agent servers coordinate through a local lock shared across projects for the same OS user and host. A workflow holds control for its native work and releases it afterward. Interactive `inspect`/`act` calls retain control for up to 30 seconds of idle time; call `release_control` as soon as you finish. The CLI closes its connection and releases control automatically. Another Otto client receives `desktop_busy` before inspection or execution; wait and retry Otto later instead of starting a competing controller. Active live owners are never displaced just because time has passed. Restart older connections that do not expose `release_control`.
+
+This coordinates Otto agent servers, not arbitrary apps, human input, other computer-use tools, or the Electron app. Fresh observations and field guards remain necessary; a lock is not a transaction or rollback guarantee for OS actions.
 
 If that key is already supplied to the MCP host environment, generate its explicit forwarding declaration with:
 
