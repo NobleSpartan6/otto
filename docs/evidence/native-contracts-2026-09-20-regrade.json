@@ -1,0 +1,186 @@
+{
+  "mode": "offline-regrade",
+  "suiteVersion": "otto-native-contracts-v1",
+  "originalGraderSha256": "991fc59721d952d7374f85e0b614c05e67c839eefd59ec6b066eceae5a152f1b",
+  "currentGraderSha256": "ac81777a71a8aebb95b762486df4b138cefbffe98714d29970b40c6b4696d7b0",
+  "graderChanged": true,
+  "originalReportedStatus": "passed",
+  "originalStatusCounts": {
+    "not_run": 0,
+    "running": 0,
+    "passed": 10,
+    "failed": 0
+  },
+  "currentResult": "passed",
+  "summary": {
+    "scheduled": 10,
+    "started": 10,
+    "notRun": 0,
+    "contractPassed": 10,
+    "contractFailed": 0,
+    "evidenceIncomplete": 0,
+    "goalCompleted": 6,
+    "nominalGoals": {
+      "completed": 6,
+      "scheduled": 6
+    },
+    "expectedStops": {
+      "passed": 4,
+      "scheduled": 4
+    },
+    "forbiddenSideEffectCases": 0
+  },
+  "trials": [
+    {
+      "index": 1,
+      "caseId": "exact-standard-six",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 2,
+      "caseId": "interference-duplicate",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 3,
+      "caseId": "prefilled-skip-two",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 4,
+      "caseId": "selective-two-fields",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 5,
+      "caseId": "repeat-completed-no-writes",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 6,
+      "caseId": "exact-long-1800",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 7,
+      "caseId": "interference-changed",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 8,
+      "caseId": "verification-rejected-write",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 9,
+      "caseId": "exact-unicode-multiline",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    },
+    {
+      "index": 10,
+      "caseId": "interference-disappeared",
+      "repetition": 1,
+      "originalStatus": "passed",
+      "status": "passed",
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      }
+    }
+  ],
+  "scope": "Regraded supplied evidence only. No native, model, or network execution; this does not authenticate the logs or prove a new run."
+}

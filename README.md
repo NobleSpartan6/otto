@@ -93,6 +93,8 @@ The redesigned agent workspace follows an [assessment of Diffusion Studio's inst
 
 ## For Codex and other coding agents
 
+For an engineering walkthrough, read the [integration and evaluation case study](docs/portfolio/cohere.md), [native contract evaluation](docs/evaluation-native-contracts.md), and [five short lessons on agent evals](docs/learning/agent-evals.md).
+
 **[Otto for agents: overview, setup, and measured results](https://noblespartan6.github.io/otto/agents.html)** · [Use it in a running task](docs/current-task-usage.md)
 
 Otto's source-build **agent bridge** lets a coding agent inspect an explicitly scoped native app, execute a known sequence locally, and receive a compact receipt. `run_steps` makes no model calls and checks supplied final values/text against native state. `act` supports individual fresh-reference actions. Optional `delegate` lets Jev choose among the host's explicit, single-use permitted actions; it stops on uncertainty instead of inventing actions or text.

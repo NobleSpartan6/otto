@@ -1,0 +1,3775 @@
+{
+  "schemaVersion": 1,
+  "suiteVersion": "otto-native-contracts-v1",
+  "recordedAt": "2026-09-20T01:44:16.760Z",
+  "status": "passed",
+  "options": {
+    "run": true,
+    "repetitions": 1,
+    "seed": 20260920
+  },
+  "summary": {
+    "scheduled": 10,
+    "started": 10,
+    "contractPassed": 10,
+    "contractFailed": 0,
+    "notRun": 0,
+    "evidenceIncomplete": 0,
+    "goalCompleted": 6,
+    "nominalGoals": {
+      "completed": 6,
+      "scheduled": 6
+    },
+    "expectedStops": {
+      "passed": 4,
+      "scheduled": 4
+    },
+    "forbiddenSideEffectCases": 0,
+    "modelCalls": 0,
+    "providerTokenUsage": null,
+    "billedCost": null
+  },
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "25.5.0",
+    "node": "v26.8.1"
+  },
+  "hashes": {
+    "evals/native-contracts.ts": "991fc59721d952d7374f85e0b614c05e67c839eefd59ec6b066eceae5a152f1b",
+    "tests/native/contract-suite.ts": "40d1bfe0b0e273f831be345e22535b6e698b36dd39a3755ac3a9dc71819510bd",
+    "tests/native/FormFixture.swift": "380c9c31c92540ccb871eb02145c56a265b13355592e9c07056b4e4bc4ae1571",
+    "scripts/launch-form-fixture.ts": "eca3c6fdd7ecf2baf76a4ac9f18bea5e53102852a61939c8a454499cdc8c48c4",
+    "desktop/native/macos/otto-ax": "b3505deb61f89108e66555e63df4e6676a1d28004f5e5d87d2aa2a17baae20a4",
+    "dist-desktop/desktop/agent-server.js": "c5349bbafaa88c0244b1b39485e1bc608f51d5964d5bb1a7c2ada59c1a8e8486",
+    "dist-desktop/desktop/agent-lease.js": "0120ae46502b1b34f41a9979651d92166718501ae26d29e3669f1e835676dfe3",
+    "dist-desktop/desktop/native-driver.js": "d7eeb584e42e2c21cd476685d693c7b180cf9faf2fcfea61b58a96c314314d97",
+    "dist-desktop/desktop/ocr.js": "732d85a58c3b17f2eba07f02dc2e2e980341205a3687dac66a55cb09ab44d7e3",
+    "dist-desktop/core/agent-session.js": "99cb44eda8272f8871d142ea44ea8871ed0ee45355a59f051f96425036e4857d",
+    "dist-desktop/core/agent-workflow.js": "7a0830f68a2cdc9a40499ea5a6195380f3bef7f89c224b6e1da538613eae9e30",
+    "dist-desktop/core/developer.js": "44a8cceb8053622cdbad44ea18d46b162177ae44fabbd9da70842c21ee37823e",
+    "dist-desktop/core/candidates.js": "aa1d700420d9826e071da49296507798ebc62af5aa537c2d958c03726bc0519c",
+    "package-lock.json": "4665614aa3f46e1364303331516bb3ffe32a2267c843d91f14c4cd9d0defac21"
+  },
+  "claim": "Scripted native integration contracts on one authored AppKit fixture. No LLM-agent capability, token savings, or production reliability estimate.",
+  "evidenceLayers": {
+    "protocol": "real MCP stdio",
+    "driver": "real macOS Accessibility",
+    "taskSelection": "scripted",
+    "model": "none",
+    "split": "public development/regression"
+  },
+  "publication": {
+    "originalReportSHA256": "cd735311e87b123476b7716204fa4b30bdc68f6437a7f7789242b659a795a9e0",
+    "omitted": [
+      "Local temporary fixture paths and process-launch metadata",
+      "Local cleanup messages"
+    ],
+    "syntheticOnly": true,
+    "originalGradesPreserved": true
+  },
+  "trials": [
+    {
+      "index": 1,
+      "caseId": "exact-standard-six",
+      "repetition": 1,
+      "family": "exact-literals",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 93,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "AE9E8301-B7C3-40F7-A095-1E87DC3FE78C",
+          "pid": 47131,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 6,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 93,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1636,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1641,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 2810,
+              "field": "Repository URL",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 4
+            },
+            {
+              "after": "https://code.example.invalid/otto-demo",
+              "before": "",
+              "elapsedMs": 2810,
+              "field": "Repository URL",
+              "kind": "field-change",
+              "sequence": 5
+            },
+            {
+              "elapsedMs": 3878,
+              "field": "Local directory",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 6
+            },
+            {
+              "after": "/tmp/otto-demo",
+              "before": "",
+              "elapsedMs": 3879,
+              "field": "Local directory",
+              "kind": "field-change",
+              "sequence": 7
+            },
+            {
+              "elapsedMs": 4858,
+              "field": "Package manager",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 8
+            },
+            {
+              "after": "npm",
+              "before": "",
+              "elapsedMs": 4858,
+              "field": "Package manager",
+              "kind": "field-change",
+              "sequence": 9
+            },
+            {
+              "elapsedMs": 5861,
+              "field": "Test command",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 10
+            },
+            {
+              "after": "npm test",
+              "before": "",
+              "elapsedMs": 5862,
+              "field": "Test command",
+              "kind": "field-change",
+              "sequence": 11
+            },
+            {
+              "elapsedMs": 6874,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 12
+            },
+            {
+              "after": "Local fixture only — no files changed.",
+              "before": "",
+              "elapsedMs": 6874,
+              "field": "Notes",
+              "kind": "field-change",
+              "sequence": 13
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 6,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "/tmp/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Local fixture only — no files changed.",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm test",
+              "valueChangeCount": 1,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "AE9E8301-B7C3-40F7-A095-1E87DC3FE78C",
+          "pid": 47131,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"verified\",\"actions\":6,\"completedSteps\":6,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":7682,\"observations\":14}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 6,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 93,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1636,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1641,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 2810,
+                "field": "Repository URL",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "https://code.example.invalid/otto-demo",
+                "before": "",
+                "elapsedMs": 2810,
+                "field": "Repository URL",
+                "kind": "field-change",
+                "sequence": 5
+              },
+              {
+                "elapsedMs": 3878,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 6
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3879,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 7
+              },
+              {
+                "elapsedMs": 4858,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 8
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 4858,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 9
+              },
+              {
+                "elapsedMs": 5861,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 10
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 5862,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 11
+              },
+              {
+                "elapsedMs": 6874,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 12
+              },
+              {
+                "after": "Local fixture only — no files changed.",
+                "before": "",
+                "elapsedMs": 6874,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 13
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 6,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Local fixture only — no files changed.",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "AE9E8301-B7C3-40F7-A095-1E87DC3FE78C",
+            "pid": 47131,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 9373,
+      "toolCalls": 1
+    },
+    {
+      "index": 2,
+      "caseId": "interference-duplicate",
+      "repetition": 1,
+      "family": "interference",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 74,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "duplicate",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "26400F6B-E876-4D29-943E-B5E080DCB4B5",
+          "pid": 47421,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 1,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": "Duplicate target — must remain unchanged",
+          "events": [
+            {
+              "elapsedMs": 74,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1555,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1560,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 1561,
+              "field": "Notes",
+              "kind": "fixture-fault",
+              "mode": "duplicate",
+              "sequence": 4
+            }
+          ],
+          "faultMode": "duplicate",
+          "faultTriggered": true,
+          "fieldMutationCount": 1,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "26400F6B-E876-4D29-943E-B5E080DCB4B5",
+          "pid": 47421,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"stopped\",\"actions\":1,\"completedSteps\":1,\"checks\":[],\"modelCalls\":0,\"elapsedMs\":1802,\"reason\":\"The pinned native form changed. Remaining fields must not be filled.\",\"observations\":3}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 1,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": "Duplicate target — must remain unchanged",
+            "events": [
+              {
+                "elapsedMs": 74,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1555,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1560,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 1561,
+                "field": "Notes",
+                "kind": "fixture-fault",
+                "mode": "duplicate",
+                "sequence": 4
+              }
+            ],
+            "faultMode": "duplicate",
+            "faultTriggered": true,
+            "fieldMutationCount": 1,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "26400F6B-E876-4D29-943E-B5E080DCB4B5",
+            "pid": 47421,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 3202,
+      "toolCalls": 1
+    },
+    {
+      "index": 3,
+      "caseId": "prefilled-skip-two",
+      "repetition": 1,
+      "family": "selective-idempotent",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 102,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "D8D56CFC-07E8-48C8-BAE9-15D8940487E5",
+          "pid": 48191,
+          "prefill": true,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 4,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 102,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 3414,
+              "field": "Local directory",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "/tmp/otto-demo",
+              "before": "",
+              "elapsedMs": 3415,
+              "field": "Local directory",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 6320,
+              "field": "Package manager",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 4
+            },
+            {
+              "after": "npm",
+              "before": "",
+              "elapsedMs": 6320,
+              "field": "Package manager",
+              "kind": "field-change",
+              "sequence": 5
+            },
+            {
+              "elapsedMs": 7707,
+              "field": "Test command",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 6
+            },
+            {
+              "after": "npm test",
+              "before": "",
+              "elapsedMs": 7707,
+              "field": "Test command",
+              "kind": "field-change",
+              "sequence": 7
+            },
+            {
+              "elapsedMs": 8790,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 8
+            },
+            {
+              "after": "Local fixture only — no files changed.",
+              "before": "",
+              "elapsedMs": 8791,
+              "field": "Notes",
+              "kind": "field-change",
+              "sequence": 9
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 4,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "/tmp/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Local fixture only — no files changed.",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm test",
+              "valueChangeCount": 1,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "D8D56CFC-07E8-48C8-BAE9-15D8940487E5",
+          "pid": 48191,
+          "prefill": true,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"verified\",\"actions\":4,\"completedSteps\":6,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":9549,\"observations\":10}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 4,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 102,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 3414,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3415,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 6320,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 6320,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 5
+              },
+              {
+                "elapsedMs": 7707,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 6
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 7707,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 7
+              },
+              {
+                "elapsedMs": 8790,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 8
+              },
+              {
+                "after": "Local fixture only — no files changed.",
+                "before": "",
+                "elapsedMs": 8791,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 9
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 4,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Local fixture only — no files changed.",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "D8D56CFC-07E8-48C8-BAE9-15D8940487E5",
+            "pid": 48191,
+            "prefill": true,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 11634,
+      "toolCalls": 1
+    },
+    {
+      "index": 4,
+      "caseId": "selective-two-fields",
+      "repetition": 1,
+      "family": "selective-idempotent",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 74,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "A78864A4-5DEE-46C1-A477-C47ADDEEBBDC",
+          "pid": 49298,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 2,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 74,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1383,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1388,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 2396,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 4
+            },
+            {
+              "after": "Local fixture only — no files changed.",
+              "before": "",
+              "elapsedMs": 2397,
+              "field": "Notes",
+              "kind": "field-change",
+              "sequence": 5
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 2,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Local fixture only — no files changed.",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "A78864A4-5DEE-46C1-A477-C47ADDEEBBDC",
+          "pid": 49298,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"verified\",\"actions\":2,\"completedSteps\":2,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":3158,\"observations\":6}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 2,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 74,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1383,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1388,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 2396,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "Local fixture only — no files changed.",
+                "before": "",
+                "elapsedMs": 2397,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 5
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 2,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Local fixture only — no files changed.",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "A78864A4-5DEE-46C1-A477-C47ADDEEBBDC",
+            "pid": 49298,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 4453,
+      "toolCalls": 1
+    },
+    {
+      "index": 5,
+      "caseId": "repeat-completed-no-writes",
+      "repetition": 1,
+      "family": "selective-idempotent",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 76,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "ED3C474B-215B-4FA2-BBD9-01FE15788B96",
+          "pid": 49913,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 6,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 76,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1534,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1539,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 2508,
+              "field": "Repository URL",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 4
+            },
+            {
+              "after": "https://code.example.invalid/otto-demo",
+              "before": "",
+              "elapsedMs": 2508,
+              "field": "Repository URL",
+              "kind": "field-change",
+              "sequence": 5
+            },
+            {
+              "elapsedMs": 3607,
+              "field": "Local directory",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 6
+            },
+            {
+              "after": "/tmp/otto-demo",
+              "before": "",
+              "elapsedMs": 3607,
+              "field": "Local directory",
+              "kind": "field-change",
+              "sequence": 7
+            },
+            {
+              "elapsedMs": 4756,
+              "field": "Package manager",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 8
+            },
+            {
+              "after": "npm",
+              "before": "",
+              "elapsedMs": 4757,
+              "field": "Package manager",
+              "kind": "field-change",
+              "sequence": 9
+            },
+            {
+              "elapsedMs": 5844,
+              "field": "Test command",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 10
+            },
+            {
+              "after": "npm test",
+              "before": "",
+              "elapsedMs": 5844,
+              "field": "Test command",
+              "kind": "field-change",
+              "sequence": 11
+            },
+            {
+              "elapsedMs": 6973,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 12
+            },
+            {
+              "after": "Local fixture only — no files changed.",
+              "before": "",
+              "elapsedMs": 6974,
+              "field": "Notes",
+              "kind": "field-change",
+              "sequence": 13
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 6,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "/tmp/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Local fixture only — no files changed.",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm test",
+              "valueChangeCount": 1,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "ED3C474B-215B-4FA2-BBD9-01FE15788B96",
+          "pid": 49913,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"verified\",\"actions\":6,\"completedSteps\":6,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":7828,\"observations\":14}",
+            "isError": false
+          },
+          {
+            "text": "{\"status\":\"verified\",\"actions\":0,\"completedSteps\":6,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":1088,\"observations\":2}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 6,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 76,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1534,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1539,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 2508,
+                "field": "Repository URL",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "https://code.example.invalid/otto-demo",
+                "before": "",
+                "elapsedMs": 2508,
+                "field": "Repository URL",
+                "kind": "field-change",
+                "sequence": 5
+              },
+              {
+                "elapsedMs": 3607,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 6
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3607,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 7
+              },
+              {
+                "elapsedMs": 4756,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 8
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 4757,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 9
+              },
+              {
+                "elapsedMs": 5844,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 10
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 5844,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 11
+              },
+              {
+                "elapsedMs": 6973,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 12
+              },
+              {
+                "after": "Local fixture only — no files changed.",
+                "before": "",
+                "elapsedMs": 6974,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 13
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 6,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Local fixture only — no files changed.",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "ED3C474B-215B-4FA2-BBD9-01FE15788B96",
+            "pid": 49913,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          },
+          {
+            "axWriteAttempts": 6,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 76,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1534,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1539,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 2508,
+                "field": "Repository URL",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "https://code.example.invalid/otto-demo",
+                "before": "",
+                "elapsedMs": 2508,
+                "field": "Repository URL",
+                "kind": "field-change",
+                "sequence": 5
+              },
+              {
+                "elapsedMs": 3607,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 6
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3607,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 7
+              },
+              {
+                "elapsedMs": 4756,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 8
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 4757,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 9
+              },
+              {
+                "elapsedMs": 5844,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 10
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 5844,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 11
+              },
+              {
+                "elapsedMs": 6973,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 12
+              },
+              {
+                "after": "Local fixture only — no files changed.",
+                "before": "",
+                "elapsedMs": 6974,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 13
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 6,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Local fixture only — no files changed.",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "ED3C474B-215B-4FA2-BBD9-01FE15788B96",
+            "pid": 49913,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 10332,
+      "toolCalls": 2
+    },
+    {
+      "index": 6,
+      "caseId": "exact-long-1800",
+      "repetition": 1,
+      "family": "exact-literals",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 92,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "70247DB9-7B74-41BF-97DA-EFD010B585A2",
+          "pid": 50792,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 6,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 92,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1522,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1527,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 2616,
+              "field": "Repository URL",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 4
+            },
+            {
+              "after": "https://code.example.invalid/otto-demo",
+              "before": "",
+              "elapsedMs": 2616,
+              "field": "Repository URL",
+              "kind": "field-change",
+              "sequence": 5
+            },
+            {
+              "elapsedMs": 3730,
+              "field": "Local directory",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 6
+            },
+            {
+              "after": "/tmp/otto-demo",
+              "before": "",
+              "elapsedMs": 3730,
+              "field": "Local directory",
+              "kind": "field-change",
+              "sequence": 7
+            },
+            {
+              "elapsedMs": 4868,
+              "field": "Package manager",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 8
+            },
+            {
+              "after": "npm",
+              "before": "",
+              "elapsedMs": 4868,
+              "field": "Package manager",
+              "kind": "field-change",
+              "sequence": 9
+            },
+            {
+              "elapsedMs": 6006,
+              "field": "Test command",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 10
+            },
+            {
+              "after": "npm test",
+              "before": "",
+              "elapsedMs": 6007,
+              "field": "Test command",
+              "kind": "field-change",
+              "sequence": 11
+            },
+            {
+              "elapsedMs": 7089,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 12
+            },
+            {
+              "after": "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界",
+              "before": "",
+              "elapsedMs": 7089,
+              "field": "Notes",
+              "kind": "field-change",
+              "sequence": 13
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 6,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "/tmp/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm test",
+              "valueChangeCount": 1,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "70247DB9-7B74-41BF-97DA-EFD010B585A2",
+          "pid": 50792,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"verified\",\"actions\":6,\"completedSteps\":6,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":8172,\"observations\":14}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 6,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 92,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1522,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1527,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 2616,
+                "field": "Repository URL",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "https://code.example.invalid/otto-demo",
+                "before": "",
+                "elapsedMs": 2616,
+                "field": "Repository URL",
+                "kind": "field-change",
+                "sequence": 5
+              },
+              {
+                "elapsedMs": 3730,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 6
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3730,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 7
+              },
+              {
+                "elapsedMs": 4868,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 8
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 4868,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 9
+              },
+              {
+                "elapsedMs": 6006,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 10
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 6007,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 11
+              },
+              {
+                "elapsedMs": 7089,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 12
+              },
+              {
+                "after": "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界",
+                "before": "",
+                "elapsedMs": 7089,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 13
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 6,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "70247DB9-7B74-41BF-97DA-EFD010B585A2",
+            "pid": 50792,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 9605,
+      "toolCalls": 1
+    },
+    {
+      "index": 7,
+      "caseId": "interference-changed",
+      "repetition": 1,
+      "family": "interference",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 74,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "changed",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "FCE5FC46-E8B7-4C27-A86F-4E585D13364E",
+          "pid": 51042,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 1,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 74,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1344,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1349,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 1349,
+              "field": "Notes",
+              "kind": "fixture-fault",
+              "mode": "changed",
+              "sequence": 4
+            }
+          ],
+          "faultMode": "changed",
+          "faultTriggered": true,
+          "fieldMutationCount": 1,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Edited by fixture after preview — preserve this value",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "FCE5FC46-E8B7-4C27-A86F-4E585D13364E",
+          "pid": 51042,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"stopped\",\"actions\":1,\"completedSteps\":1,\"checks\":[],\"modelCalls\":0,\"elapsedMs\":1696,\"reason\":\"A pinned field does not match its expected full native value.\",\"observations\":3}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 1,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 74,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1344,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1349,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 1349,
+                "field": "Notes",
+                "kind": "fixture-fault",
+                "mode": "changed",
+                "sequence": 4
+              }
+            ],
+            "faultMode": "changed",
+            "faultTriggered": true,
+            "fieldMutationCount": 1,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Edited by fixture after preview — preserve this value",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "FCE5FC46-E8B7-4C27-A86F-4E585D13364E",
+            "pid": 51042,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 2972,
+      "toolCalls": 1
+    },
+    {
+      "index": 8,
+      "caseId": "verification-rejected-write",
+      "repetition": 1,
+      "family": "verification",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 75,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "reject",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "D5B73236-4626-405F-94FC-3CCD5E41B945",
+          "pid": 51178,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 6,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 75,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1351,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1356,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 1356,
+              "field": "Notes",
+              "kind": "fixture-fault",
+              "mode": "reject",
+              "sequence": 4
+            },
+            {
+              "elapsedMs": 2296,
+              "field": "Repository URL",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 5
+            },
+            {
+              "after": "https://code.example.invalid/otto-demo",
+              "before": "",
+              "elapsedMs": 2297,
+              "field": "Repository URL",
+              "kind": "field-change",
+              "sequence": 6
+            },
+            {
+              "elapsedMs": 3264,
+              "field": "Local directory",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 7
+            },
+            {
+              "after": "/tmp/otto-demo",
+              "before": "",
+              "elapsedMs": 3265,
+              "field": "Local directory",
+              "kind": "field-change",
+              "sequence": 8
+            },
+            {
+              "elapsedMs": 4254,
+              "field": "Package manager",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 9
+            },
+            {
+              "after": "npm",
+              "before": "",
+              "elapsedMs": 4255,
+              "field": "Package manager",
+              "kind": "field-change",
+              "sequence": 10
+            },
+            {
+              "elapsedMs": 5265,
+              "field": "Test command",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 11
+            },
+            {
+              "after": "npm test",
+              "before": "",
+              "elapsedMs": 5266,
+              "field": "Test command",
+              "kind": "field-change",
+              "sequence": 12
+            },
+            {
+              "elapsedMs": 6432,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": true,
+              "sequence": 13
+            }
+          ],
+          "faultMode": "reject",
+          "faultTriggered": true,
+          "fieldMutationCount": 5,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "/tmp/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": true,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm test",
+              "valueChangeCount": 1,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "D5B73236-4626-405F-94FC-3CCD5E41B945",
+          "pid": 51178,
+          "prefill": false,
+          "rejectedWrites": 1,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"stopped\",\"actions\":6,\"completedSteps\":5,\"checks\":[],\"modelCalls\":0,\"elapsedMs\":6755,\"reason\":\"The native action was dispatched but its result was not verified. Inspect before retrying; it was not retried.\",\"uncertainAction\":true,\"observations\":13}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 6,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 75,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1351,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1356,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 1356,
+                "field": "Notes",
+                "kind": "fixture-fault",
+                "mode": "reject",
+                "sequence": 4
+              },
+              {
+                "elapsedMs": 2296,
+                "field": "Repository URL",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 5
+              },
+              {
+                "after": "https://code.example.invalid/otto-demo",
+                "before": "",
+                "elapsedMs": 2297,
+                "field": "Repository URL",
+                "kind": "field-change",
+                "sequence": 6
+              },
+              {
+                "elapsedMs": 3264,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 7
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3265,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 8
+              },
+              {
+                "elapsedMs": 4254,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 9
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 4255,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 10
+              },
+              {
+                "elapsedMs": 5265,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 11
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 5266,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 12
+              },
+              {
+                "elapsedMs": 6432,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": true,
+                "sequence": 13
+              }
+            ],
+            "faultMode": "reject",
+            "faultTriggered": true,
+            "fieldMutationCount": 5,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": true,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "D5B73236-4626-405F-94FC-3CCD5E41B945",
+            "pid": 51178,
+            "prefill": false,
+            "rejectedWrites": 1,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 8035,
+      "toolCalls": 1
+    },
+    {
+      "index": 9,
+      "caseId": "exact-unicode-multiline",
+      "repetition": 1,
+      "family": "exact-literals",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 84,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "F4ECBD0D-61D4-458E-97AE-2AC1E223680D",
+          "pid": 53287,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 6,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 84,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1614,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Élodie 東京",
+              "before": "",
+              "elapsedMs": 1621,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 2712,
+              "field": "Repository URL",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 4
+            },
+            {
+              "after": "https://code.example.invalid/otto-demo",
+              "before": "",
+              "elapsedMs": 2713,
+              "field": "Repository URL",
+              "kind": "field-change",
+              "sequence": 5
+            },
+            {
+              "elapsedMs": 3823,
+              "field": "Local directory",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 6
+            },
+            {
+              "after": "/tmp/otto-demo",
+              "before": "",
+              "elapsedMs": 3824,
+              "field": "Local directory",
+              "kind": "field-change",
+              "sequence": 7
+            },
+            {
+              "elapsedMs": 4953,
+              "field": "Package manager",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 8
+            },
+            {
+              "after": "npm",
+              "before": "",
+              "elapsedMs": 4954,
+              "field": "Package manager",
+              "kind": "field-change",
+              "sequence": 9
+            },
+            {
+              "elapsedMs": 6100,
+              "field": "Test command",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 10
+            },
+            {
+              "after": "npm test",
+              "before": "",
+              "elapsedMs": 6101,
+              "field": "Test command",
+              "kind": "field-change",
+              "sequence": 11
+            },
+            {
+              "elapsedMs": 7260,
+              "field": "Notes",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 12
+            },
+            {
+              "after": "こんにちは\nمرحبا بالعالم\nLiteral: $(nothing) `nothing`",
+              "before": "",
+              "elapsedMs": 7260,
+              "field": "Notes",
+              "kind": "field-change",
+              "sequence": 13
+            }
+          ],
+          "faultMode": "none",
+          "faultTriggered": false,
+          "fieldMutationCount": 6,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "/tmp/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "こんにちは\nمرحبا بالعالم\nLiteral: $(nothing) `nothing`",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Élodie 東京",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "https://code.example.invalid/otto-demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "npm test",
+              "valueChangeCount": 1,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "F4ECBD0D-61D4-458E-97AE-2AC1E223680D",
+          "pid": 53287,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"verified\",\"actions\":6,\"completedSteps\":6,\"checks\":[{\"kind\":\"value\",\"label\":\"Project name\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Repository URL\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Local directory\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Package manager\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Test command\",\"matched\":true},{\"kind\":\"value\",\"label\":\"Notes\",\"matched\":true}],\"modelCalls\":0,\"elapsedMs\":8194,\"observations\":14}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 6,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 84,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1614,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Élodie 東京",
+                "before": "",
+                "elapsedMs": 1621,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 2712,
+                "field": "Repository URL",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 4
+              },
+              {
+                "after": "https://code.example.invalid/otto-demo",
+                "before": "",
+                "elapsedMs": 2713,
+                "field": "Repository URL",
+                "kind": "field-change",
+                "sequence": 5
+              },
+              {
+                "elapsedMs": 3823,
+                "field": "Local directory",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 6
+              },
+              {
+                "after": "/tmp/otto-demo",
+                "before": "",
+                "elapsedMs": 3824,
+                "field": "Local directory",
+                "kind": "field-change",
+                "sequence": 7
+              },
+              {
+                "elapsedMs": 4953,
+                "field": "Package manager",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 8
+              },
+              {
+                "after": "npm",
+                "before": "",
+                "elapsedMs": 4954,
+                "field": "Package manager",
+                "kind": "field-change",
+                "sequence": 9
+              },
+              {
+                "elapsedMs": 6100,
+                "field": "Test command",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 10
+              },
+              {
+                "after": "npm test",
+                "before": "",
+                "elapsedMs": 6101,
+                "field": "Test command",
+                "kind": "field-change",
+                "sequence": 11
+              },
+              {
+                "elapsedMs": 7260,
+                "field": "Notes",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 12
+              },
+              {
+                "after": "こんにちは\nمرحبا بالعالم\nLiteral: $(nothing) `nothing`",
+                "before": "",
+                "elapsedMs": 7260,
+                "field": "Notes",
+                "kind": "field-change",
+                "sequence": 13
+              }
+            ],
+            "faultMode": "none",
+            "faultTriggered": false,
+            "fieldMutationCount": 6,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "/tmp/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "こんにちは\nمرحبا بالعالم\nLiteral: $(nothing) `nothing`",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Élodie 東京",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "https://code.example.invalid/otto-demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "npm test",
+                "valueChangeCount": 1,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "F4ECBD0D-61D4-458E-97AE-2AC1E223680D",
+            "pid": 53287,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": true,
+        "expectedStop": false,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 9502,
+      "toolCalls": 1
+    },
+    {
+      "index": 10,
+      "caseId": "interference-disappeared",
+      "repetition": 1,
+      "family": "interference",
+      "status": "passed",
+      "evidence": {
+        "before": {
+          "axWriteAttempts": 0,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 73,
+              "kind": "ready",
+              "sequence": 1
+            }
+          ],
+          "faultMode": "disappeared",
+          "faultTriggered": false,
+          "fieldMutationCount": 0,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "62FBC5F9-751C-40D6-B2F7-74DC90DA7389",
+          "pid": 53947,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "after": {
+          "axWriteAttempts": 1,
+          "duplicateMutationCount": 0,
+          "duplicateNotesValue": null,
+          "events": [
+            {
+              "elapsedMs": 73,
+              "kind": "ready",
+              "sequence": 1
+            },
+            {
+              "elapsedMs": 1613,
+              "field": "Project name",
+              "kind": "ax-write-attempt",
+              "rejected": false,
+              "sequence": 2
+            },
+            {
+              "after": "Otto Demo",
+              "before": "",
+              "elapsedMs": 1618,
+              "field": "Project name",
+              "kind": "field-change",
+              "sequence": 3
+            },
+            {
+              "elapsedMs": 1618,
+              "field": "Notes",
+              "kind": "fixture-fault",
+              "mode": "disappeared",
+              "sequence": 4
+            }
+          ],
+          "faultMode": "disappeared",
+          "faultTriggered": true,
+          "fieldMutationCount": 1,
+          "fields": {
+            "Local directory": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Notes": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": false
+            },
+            "Package manager": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Project name": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "Otto Demo",
+              "valueChangeCount": 1,
+              "visible": true
+            },
+            "Repository URL": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            },
+            "Test command": {
+              "editable": true,
+              "rejectAXWrites": false,
+              "value": "",
+              "valueChangeCount": 0,
+              "visible": true
+            }
+          },
+          "fixture": "otto-developer-onboarding-v1",
+          "forbiddenSubmitCount": 0,
+          "launchId": "62FBC5F9-751C-40D6-B2F7-74DC90DA7389",
+          "pid": 53947,
+          "prefill": false,
+          "rejectedWrites": 0,
+          "resetCount": 0,
+          "schemaVersion": 1,
+          "status": "ready"
+        },
+        "responses": [
+          {
+            "text": "{\"status\":\"stopped\",\"actions\":1,\"completedSteps\":1,\"checks\":[],\"modelCalls\":0,\"elapsedMs\":1912,\"reason\":\"The pinned native form changed. Remaining fields must not be filled.\",\"observations\":3}",
+            "isError": false
+          }
+        ],
+        "checkpoints": [
+          {
+            "axWriteAttempts": 1,
+            "duplicateMutationCount": 0,
+            "duplicateNotesValue": null,
+            "events": [
+              {
+                "elapsedMs": 73,
+                "kind": "ready",
+                "sequence": 1
+              },
+              {
+                "elapsedMs": 1613,
+                "field": "Project name",
+                "kind": "ax-write-attempt",
+                "rejected": false,
+                "sequence": 2
+              },
+              {
+                "after": "Otto Demo",
+                "before": "",
+                "elapsedMs": 1618,
+                "field": "Project name",
+                "kind": "field-change",
+                "sequence": 3
+              },
+              {
+                "elapsedMs": 1618,
+                "field": "Notes",
+                "kind": "fixture-fault",
+                "mode": "disappeared",
+                "sequence": 4
+              }
+            ],
+            "faultMode": "disappeared",
+            "faultTriggered": true,
+            "fieldMutationCount": 1,
+            "fields": {
+              "Local directory": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Notes": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": false
+              },
+              "Package manager": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Project name": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "Otto Demo",
+                "valueChangeCount": 1,
+                "visible": true
+              },
+              "Repository URL": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              },
+              "Test command": {
+                "editable": true,
+                "rejectAXWrites": false,
+                "value": "",
+                "valueChangeCount": 0,
+                "visible": true
+              }
+            },
+            "fixture": "otto-developer-onboarding-v1",
+            "forbiddenSubmitCount": 0,
+            "launchId": "62FBC5F9-751C-40D6-B2F7-74DC90DA7389",
+            "pid": 53947,
+            "prefill": false,
+            "rejectedWrites": 0,
+            "resetCount": 0,
+            "schemaVersion": 1,
+            "status": "ready"
+          }
+        ],
+        "runtimeUnchanged": true,
+        "errors": []
+      },
+      "grade": {
+        "contractPassed": true,
+        "goalCompleted": false,
+        "expectedStop": true,
+        "failures": [],
+        "forbiddenSideEffects": [],
+        "evidenceComplete": true
+      },
+      "elapsedMs": 3199,
+      "toolCalls": 1
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+import type { ExpectedState, WorkflowStep } from "../core/agent-workflow.js";
+
+export const SUITE_VERSION = "otto-native-contracts-v1";
+export const FIELD_LABELS = ["Project name", "Repository URL", "Local directory", "Package manager", "Test command", "Notes"] as const;
+type Fault = "none" | "changed" | "disappeared" | "duplicate" | "reject";
+export interface ContractCase {
+  id: string;
+  family: "exact-literals" | "selective-idempotent" | "interference" | "verification";
+  templateGroup: "otto-developer-onboarding-v1";
+  provenance: "authored-development" | "authored-regression";
+  fault: Fault;
+  prefill: boolean;
+  runs: Array<{ steps: WorkflowStep[]; expected: ExpectedState }>;
+  initialValues: Record<string, string>;
+  expectedFinalValues: Record<string, string>;
+  expectedReceiptStatuses: Array<"verified" | "stopped">;
+  expectedReceiptActions: number[];
+  expectedCompletedSteps: number[];
+  expectedFieldChanges: Record<string, number>;
+  expectedAttempts: number;
+  expectedChanges: number;
+  expectedRejectedWrites: number;
+  expectFault: boolean;
+  goalExpected: boolean;
+}
+export interface Oracle {
+  schemaVersion: 1;
+  fixture: "otto-developer-onboarding-v1";
+  launchId: string;
+  pid: number;
+  status: "ready";
+  faultMode: Fault;
+  faultTriggered: boolean;
+  prefill: boolean;
+  resetCount: number;
+  fieldMutationCount: number;
+  axWriteAttempts: number;
+  rejectedWrites: number;
+  forbiddenSubmitCount: number;
+  duplicateMutationCount: number;
+  duplicateNotesValue: string | null;
+  fields: Record<string, { value: string; visible: boolean; editable: boolean; valueChangeCount: number; rejectAXWrites: boolean }>;
+  events: Array<{ sequence: number; kind: string; [key: string]: unknown }>;
+}
+export interface ContractEvidence {
+  before: unknown;
+  after: unknown;
+  responses: Array<{ text: string; isError?: boolean }>;
+  /** Required for multiple runs: fixture-owned state captured after every call. */
+  checkpoints?: unknown[];
+  runtimeUnchanged: boolean;
+  errors: string[];
+}
+export interface ContractGrade {
+  contractPassed: boolean;
+  goalCompleted: boolean;
+  /** The case's predeclared stopping expectation, not a claim that stopping occurred. */
+  expectedStop: boolean;
+  failures: string[];
+  forbiddenSideEffects: string[];
+  evidenceComplete: boolean;
+}
+
+const blank = () => Object.fromEntries(FIELD_LABELS.map(label => [label, ""]));
+const standard = () => Object.fromEntries(FIELD_LABELS.map((label, index) => [label, [
+  "Otto Demo", "https://code.example.invalid/otto-demo", "/tmp/otto-demo", "npm", "npm test", "Local fixture only — no files changed.",
+][index]!]));
+const externalEdit = "Edited by fixture after preview — preserve this value";
+const duplicateValue = "Duplicate target — must remain unchanged";
+function authored(id: string, family: ContractCase["family"], options: {
+  values?: Record<string, string>; labels?: readonly string[]; prefill?: boolean; repeat?: boolean; fault?: Fault;
+} = {}): ContractCase {
+  const values = { ...standard(), ...options.values };
+  const initialValues = blank();
+  if (options.prefill) for (const label of FIELD_LABELS.slice(0, 2)) initialValues[label] = standard()[label]!;
+  const labels = options.labels ?? FIELD_LABELS;
+  const goal = { ...initialValues, ...Object.fromEntries(labels.map(label => [label, values[label]!])) };
+  const fault = options.fault ?? "none";
+  const stopped = fault !== "none";
+  const changedLabels = labels.filter(label => initialValues[label] !== values[label]);
+  const actualLabels = !stopped ? changedLabels : fault === "reject" ? FIELD_LABELS.slice(0, 5) : FIELD_LABELS.slice(0, 1);
+  const expectedFinalValues = { ...initialValues, ...Object.fromEntries(actualLabels.map(label => [label, values[label]!])) };
+  if (fault === "changed") expectedFinalValues.Notes = externalEdit;
+  const attempts = fault === "reject" ? 6 : actualLabels.length;
+  const run = () => ({ steps: labels.map(label => ({ operation: "fill" as const, label, value: values[label]! })), expected: { values: { ...goal } } });
+  return {
+    id, family, templateGroup: "otto-developer-onboarding-v1", provenance: stopped ? "authored-regression" : "authored-development",
+    fault, prefill: options.prefill ?? false, runs: options.repeat ? [run(), run()] : [run()], initialValues, expectedFinalValues,
+    expectedReceiptStatuses: options.repeat ? ["verified", "verified"] : [stopped ? "stopped" : "verified"],
+    expectedReceiptActions: options.repeat ? [attempts, 0] : [attempts],
+    expectedCompletedSteps: options.repeat ? [labels.length, labels.length] : [stopped ? actualLabels.length : labels.length],
+    expectedFieldChanges: Object.fromEntries(FIELD_LABELS.map(label => [label, actualLabels.includes(label) ? 1 : 0])),
+    expectedAttempts: attempts, expectedChanges: actualLabels.length, expectedRejectedWrites: fault === "reject" ? 1 : 0,
+    expectFault: stopped, goalExpected: !stopped,
+  };
+}
+export const CASES: readonly ContractCase[] = [
+  authored("exact-standard-six", "exact-literals"),
+  authored("exact-unicode-multiline", "exact-literals", { values: { "Project name": "Élodie 東京", Notes: "こんにちは\nمرحبا بالعالم\nLiteral: $(nothing) `nothing`" } }),
+  authored("exact-long-1800", "exact-literals", { values: { Notes: "界".repeat(1800) } }),
+  authored("selective-two-fields", "selective-idempotent", { labels: ["Project name", "Notes"] }),
+  authored("prefilled-skip-two", "selective-idempotent", { prefill: true }),
+  authored("repeat-completed-no-writes", "selective-idempotent", { repeat: true }),
+  authored("interference-changed", "interference", { fault: "changed" }),
+  authored("interference-disappeared", "interference", { fault: "disappeared" }),
+  authored("interference-duplicate", "interference", { fault: "duplicate" }),
+  authored("verification-rejected-write", "verification", { fault: "reject" }),
+];
+
+const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
+const count = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0 && Number(value) <= 1_000_000;
+const string = (value: unknown, max = 2000): value is string => typeof value === "string" && value.length <= max;
+function validOracle(value: unknown): value is Oracle {
+  if (!record(value) || value.schemaVersion !== 1 || value.fixture !== "otto-developer-onboarding-v1" ||
+      !string(value.launchId, 256) || !value.launchId || !count(value.pid) || value.pid < 2 || value.status !== "ready" ||
+      !["none", "changed", "disappeared", "duplicate", "reject"].includes(String(value.faultMode)) || typeof value.faultTriggered !== "boolean" ||
+      typeof value.prefill !== "boolean" || !(value.duplicateNotesValue === null || string(value.duplicateNotesValue))) return false;
+  for (const key of ["resetCount", "fieldMutationCount", "axWriteAttempts", "rejectedWrites", "forbiddenSubmitCount", "duplicateMutationCount"])
+    if (!count(value[key])) return false;
+  if (!record(value.fields) || Object.keys(value.fields).length !== FIELD_LABELS.length) return false;
+  for (const label of FIELD_LABELS) {
+    const field = value.fields[label];
+    if (!record(field) || !string(field.value) || typeof field.visible !== "boolean" || typeof field.editable !== "boolean" ||
+        !count(field.valueChangeCount) || typeof field.rejectAXWrites !== "boolean") return false;
+  }
+  if (!Array.isArray(value.events) || value.events.length > 2000) return false;
+  let sequence = 0;
+  for (const event of value.events) {
+    if (!record(event) || !count(event.sequence) || event.sequence <= sequence || !string(event.kind, 80) || !event.kind) return false;
+    sequence = event.sequence;
+  }
+  return true;
+}
+interface Receipt {
+  status: "verified" | "completed" | "stopped"; actions: number; completedSteps: number; modelCalls: number; elapsedMs: number;
+  checks: Array<{ kind: "value" | "text"; label: string; matched: boolean }>;
+  uncertainAction?: boolean;
+  reason?: string;
+}
+function receipt(value: unknown): Receipt | undefined {
+  if (!record(value) || !["verified", "completed", "stopped"].includes(String(value.status)) || !count(value.actions) ||
+      !count(value.completedSteps) || !count(value.modelCalls) || typeof value.elapsedMs !== "number" || !Number.isFinite(value.elapsedMs) || value.elapsedMs < 0 ||
+      (value.uncertainAction !== undefined && typeof value.uncertainAction !== "boolean") || !Array.isArray(value.checks) || value.checks.length > 32) return;
+  if (value.status === "stopped" && (!string(value.reason, 2000) || !value.reason)) return;
+  if (value.checks.some(item => !record(item) || !["value", "text"].includes(String(item.kind)) || !string(item.label, 1000) || !item.label || typeof item.matched !== "boolean")) return;
+  return value as unknown as Receipt;
+}
+const sameFields = (left: Oracle, right: Oracle) => FIELD_LABELS.every(label => {
+  const a = left.fields[label]!, b = right.fields[label]!;
+  return a.value === b.value && a.visible === b.visible && a.editable === b.editable &&
+    a.valueChangeCount === b.valueChangeCount && a.rejectAXWrites === b.rejectAXWrites;
+});
+
+/** Independent fixture-state grading. No executor verification or provider calls. */
+export function gradeCase(testCase: ContractCase, evidence: ContractEvidence): ContractGrade {
+  const failures: string[] = [];
+  const forbiddenSideEffects: string[] = [];
+  const fail = (condition: boolean, reason: string) => { if (!condition) failures.push(reason); };
+  const forbidden = (condition: boolean, reason: string) => { if (condition) forbiddenSideEffects.push(reason); };
+  const checkAttempts = (oracle: Oracle, phase?: number) => {
+    const prefix = phase === undefined ? "" : `phase:${phase}:`;
+    const attempts = oracle.events.filter(event => event.kind === "ax-write-attempt");
+    fail(attempts.length === oracle.axWriteAttempts && attempts.every(event => FIELD_LABELS.includes(event.field as typeof FIELD_LABELS[number]) && typeof event.rejected === "boolean"), `${prefix}oracle_attempt_events_inconsistent`);
+    fail(attempts.filter(event => event.rejected === true).length === oracle.rejectedWrites, `${prefix}oracle_rejection_events_inconsistent`);
+    for (const label of FIELD_LABELS) {
+      const expectedRejected = label === "Notes" ? testCase.expectedRejectedWrites : 0;
+      const expectedAttempts = testCase.expectedFieldChanges[label]! + expectedRejected;
+      const fieldAttempts = attempts.filter(event => event.field === label);
+      fail(fieldAttempts.length === expectedAttempts, `${prefix}native_attempt_field_mismatch:${label}`);
+      fail(fieldAttempts.filter(event => event.rejected === true).length === expectedRejected, `${prefix}native_rejected_field_mismatch:${label}`);
+      forbidden(expectedAttempts === 0 && fieldAttempts.length > 0, `protected_field_written:${label}`);
+      forbidden(fieldAttempts.length > expectedAttempts, `extra_or_replayed_native_write:${label}`);
+    }
+  };
+  const before = validOracle(evidence?.before) ? evidence.before : undefined;
+  const after = validOracle(evidence?.after) ? evidence.after : undefined;
+  fail(Boolean(before), "missing_or_malformed_initial_oracle"); fail(Boolean(after), "missing_or_malformed_final_oracle");
+  const cleanRuntime = evidence?.runtimeUnchanged === true;
+  const cleanErrors = Array.isArray(evidence?.errors) && evidence.errors.length === 0;
+  fail(cleanRuntime, "runtime_changed_or_unverified"); fail(cleanErrors, "harness_errors_or_missing_error_record");
+  const responses = Array.isArray(evidence?.responses) ? evidence.responses : [];
+  fail(responses.length === testCase.runs.length, "response_count_mismatch");
+  const receipts = responses.map((response, index) => {
+    let parsed: Receipt | undefined;
+    try {
+      if (record(response) && (response.isError === undefined || response.isError === false) && string(response.text, 256_000)) parsed = receipt(JSON.parse(response.text));
+    } catch { /* Untrusted result text is never echoed. */ }
+    fail(Boolean(parsed), `missing_or_malformed_receipt:${index}`);
+    return parsed;
+  });
+  const phaseEvidenceRequired = testCase.runs.length > 1 || evidence?.checkpoints !== undefined;
+  const checkpoints = Array.isArray(evidence?.checkpoints) ? evidence.checkpoints.map(value => validOracle(value) ? value : undefined) : [];
+  let phasesComplete = !phaseEvidenceRequired || checkpoints.length === testCase.runs.length && checkpoints.every(Boolean);
+  fail(phasesComplete, "missing_or_malformed_phase_oracles");
+  let initialValid = Boolean(before), identityValid = Boolean(before && after);
+  if (before && after) {
+    identityValid = before.launchId === after.launchId && before.pid === after.pid;
+    fail(identityValid, "oracle_launch_or_pid_mismatch");
+    initialValid = before.faultMode === testCase.fault && before.prefill === testCase.prefill && !before.faultTriggered &&
+      before.resetCount === 0 && before.forbiddenSubmitCount === 0 && before.axWriteAttempts === 0 && before.fieldMutationCount === 0 &&
+      before.rejectedWrites === 0 && before.duplicateMutationCount === 0 && before.duplicateNotesValue === null &&
+      FIELD_LABELS.every(label => before.fields[label]!.value === testCase.initialValues[label] && before.fields[label]!.valueChangeCount === 0 &&
+        before.fields[label]!.visible && before.fields[label]!.editable && !before.fields[label]!.rejectAXWrites);
+    fail(initialValid, "initial_state_does_not_match_case");
+    fail(after.faultMode === testCase.fault && after.prefill === testCase.prefill && after.faultTriggered === testCase.expectFault, "fault_setup_or_trigger_mismatch");
+    fail(after.axWriteAttempts === testCase.expectedAttempts, "native_write_attempt_count_mismatch");
+    fail(after.fieldMutationCount === testCase.expectedChanges, "native_mutation_count_mismatch");
+    fail(after.rejectedWrites === testCase.expectedRejectedWrites, "rejected_write_count_mismatch");
+    forbidden(after.forbiddenSubmitCount > 0, "forbidden_submit"); forbidden(after.resetCount > 0, "forbidden_reset");
+    forbidden(after.duplicateMutationCount > 0, "duplicate_target_mutated");
+    forbidden(after.axWriteAttempts > testCase.expectedAttempts, "extra_or_replayed_native_write");
+    fail(after.duplicateNotesValue === (testCase.fault === "duplicate" ? duplicateValue : null), "duplicate_target_state_mismatch");
+    for (const label of FIELD_LABELS) {
+      const field = after.fields[label]!;
+      fail(field.value === testCase.expectedFinalValues[label], `final_value_mismatch:${label}`);
+      fail(field.valueChangeCount === testCase.expectedFieldChanges[label], `field_mutation_count_mismatch:${label}`);
+      fail(field.visible === !(label === "Notes" && testCase.fault === "disappeared") && field.editable, `field_availability_mismatch:${label}`);
+      fail(field.rejectAXWrites === (label === "Notes" && testCase.fault === "reject"), `field_write_policy_mismatch:${label}`);
+      forbidden(testCase.expectedFieldChanges[label] === 0 && (field.value !== testCase.expectedFinalValues[label] || field.valueChangeCount !== 0), `protected_field_changed:${label}`);
+    }
+    fail(after.fieldMutationCount === FIELD_LABELS.reduce((sum, label) => sum + after.fields[label]!.valueChangeCount, 0), "oracle_mutation_totals_inconsistent");
+    checkAttempts(after);
+    let previous = before;
+    for (const [index, checkpoint] of checkpoints.entries()) {
+      if (!checkpoint) continue;
+      const sameIdentity = checkpoint.pid === before.pid && checkpoint.launchId === before.launchId;
+      if (!sameIdentity) phasesComplete = false;
+      fail(sameIdentity, `phase_identity_mismatch:${index}`);
+      checkAttempts(checkpoint, index);
+      fail(checkpoint.axWriteAttempts - previous.axWriteAttempts === testCase.expectedReceiptActions[index] &&
+        checkpoint.axWriteAttempts - previous.axWriteAttempts === receipts[index]?.actions, `phase_write_delta_mismatch:${index}`);
+      forbidden(checkpoint.resetCount > 0, "forbidden_reset"); forbidden(checkpoint.forbiddenSubmitCount > 0, "forbidden_submit");
+      forbidden(checkpoint.duplicateMutationCount > 0, "duplicate_target_mutated");
+      if (testCase.expectedReceiptStatuses[index] === "verified") {
+        const goal = testCase.runs[index]!.expected.values!;
+        const matched = FIELD_LABELS.every(label => checkpoint.fields[label]!.value === goal[label] && checkpoint.fields[label]!.visible && checkpoint.fields[label]!.editable);
+        fail(matched, `phase_goal_not_met:${index}`);
+        forbidden(sameIdentity && receipts[index]?.status === "verified" && !matched, "false_verified_receipt");
+      }
+      if (testCase.runs.length > 1) {
+        // The repeated-completion contract requires the complete first result,
+        // followed by an independently observed zero-write, zero-change repeat.
+        fail(checkpoint.fieldMutationCount === testCase.expectedChanges && checkpoint.rejectedWrites === 0 && !checkpoint.faultTriggered &&
+          FIELD_LABELS.every(label => checkpoint.fields[label]!.valueChangeCount === testCase.expectedFieldChanges[label]), `repeat_phase_mutations_mismatch:${index}`);
+        if (index > 0) fail(sameFields(checkpoint, previous) &&
+          checkpoint.axWriteAttempts === previous.axWriteAttempts && checkpoint.fieldMutationCount === previous.fieldMutationCount, `repeat_changed_state:${index}`);
+      }
+      previous = checkpoint;
+    }
+    if (phaseEvidenceRequired && checkpoints.at(-1)) {
+      const last = checkpoints.at(-1)!;
+      fail(last.axWriteAttempts === after.axWriteAttempts && last.fieldMutationCount === after.fieldMutationCount && last.rejectedWrites === after.rejectedWrites &&
+        sameFields(last, after), "final_oracle_differs_from_last_checkpoint");
+    }
+  }
+  const evidenceComplete = Boolean(before && after && identityValid && initialValid && cleanRuntime && cleanErrors &&
+    receipts.length === testCase.runs.length && receipts.every(Boolean) && phasesComplete);
+  const finalGoal = testCase.runs.at(-1)!.expected.values!;
+  // Authoritative outcome stays separate from receipt/transport completeness.
+  const goalCompleted = Boolean(before && after && identityValid && initialValid && FIELD_LABELS.every(label =>
+    after.fields[label]!.value === finalGoal[label] && after.fields[label]!.visible && after.fields[label]!.editable));
+  fail(goalCompleted === testCase.goalExpected, "goal_outcome_mismatch");
+  for (const [index, result] of receipts.entries()) {
+    if (!result) continue;
+    fail(result.status === testCase.expectedReceiptStatuses[index], `receipt_status_mismatch:${index}`);
+    fail(result.actions === testCase.expectedReceiptActions[index], `receipt_action_count_mismatch:${index}`);
+    fail(result.completedSteps === testCase.expectedCompletedSteps[index], `receipt_completed_steps_mismatch:${index}`);
+    forbidden(result.modelCalls !== 0, "unexpected_model_call_reported");
+    forbidden(result.status === "verified" && (testCase.expectedReceiptStatuses[index] !== "verified" ||
+      (index === receipts.length - 1 && Boolean(before && after && identityValid && initialValid) && !goalCompleted)), "false_verified_receipt");
+    if (result.status === "verified") {
+      const expected = Object.keys(testCase.runs[index]?.expected.values ?? {});
+      fail(result.checks.length === expected.length && new Set(result.checks.map(check => check.label)).size === expected.length &&
+        result.checks.every(check => check.kind === "value" && expected.includes(check.label) && check.matched), `verified_checks_incomplete_or_false:${index}`);
+      fail(!result.uncertainAction, `verified_receipt_claims_uncertain_action:${index}`);
+    }
+    if (testCase.fault === "reject") fail(result.uncertainAction === true, "rejected_dispatch_uncertainty_omitted");
+  }
+  if (after && receipts.every(Boolean)) fail(receipts.reduce((sum, result) => sum + result!.actions, 0) === after.axWriteAttempts, "receipt_native_attempt_totals_disagree");
+  return { contractPassed: evidenceComplete && failures.length === 0 && forbiddenSideEffects.length === 0, goalCompleted,
+    expectedStop: testCase.expectedReceiptStatuses.includes("stopped"), failures: [...new Set(failures)],
+    forbiddenSideEffects: [...new Set(forbiddenSideEffects)], evidenceComplete };
+}

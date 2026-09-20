@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.desktop.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["evals/**/*.ts", "tests/native/contract-suite.ts"],
+  "exclude": []
+}
