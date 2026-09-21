@@ -18,7 +18,7 @@ class Driver implements NativeDriver {
   async configure(ids: string[]) { assert.deepEqual(ids, ["fixture"]); }
   async observe(): Promise<NativeSnapshot> {
     const count = ++this.observations;
-    const snapshot: NativeSnapshot = { snapshotId: `snapshot-${count}`, windowToken: "window-one", app: { ...app }, title: "Fixture form", text: "", capturedAt: new Date().toISOString(),
+    const snapshot: NativeSnapshot = { controlCoverage: "complete", snapshotId: `snapshot-${count}`, windowToken: "window-one", app: { ...app }, title: "Fixture form", text: "", capturedAt: new Date().toISOString(),
       controls: this.values.map((value, index) => ({ id: `control-${count}-${index}`, identity: `native-element-${index}`, role: "AXTextField", label: ["First", "Last", "Email"][index]!, value,
         enabled: true, editable: true, source: "accessibility", actions: ["fill"], bounds: { x: 20, y: 20 + index * 40, width: 200, height: 28 } })) };
     this.mutate(snapshot, count);
@@ -194,4 +194,150 @@ test("already-correct fields are skipped and still included in final exact readb
   const review = await ready(engine); const result = await approve(engine, review.id, review.approvalId!);
   assert.equal(result.status, "completed"); assert.equal(result.fields[0]!.status, "skipped");
   assert.equal(result.fields[0]!.after, "Ada"); assert.equal(driver.actions.length, 2);
+});
+
+// In-memory acquisition failures: the returned fields remain identical, so only
+// the coverage signal distinguishes these observations from a complete tree.
+const incompleteCoverage = ["partial", "unknown", undefined] as const;
+const coverageFailure = /Native form coverage is incomplete or unknown/;
+function loseCoverage(driver: Driver, observation: number, coverage: typeof incompleteCoverage[number]) {
+  driver.mutate = (snapshot, count) => {
+    if (count !== observation) return;
+    if (coverage === undefined) delete snapshot.controlCoverage;
+    else snapshot.controlCoverage = coverage;
+  };
+}
+
+test("batch coverage: incomplete acquisition cannot create an approval", async () => {
+  for (const coverage of incompleteCoverage) {
+    const driver = new Driver(); const engine = new BatchEngine(driver);
+    const before = [...driver.values];
+    loseCoverage(driver, 1, coverage);
+    const result = await ready(engine);
+    assert.equal(result.status, "failed", String(coverage));
+    assert.match(result.error!, coverageFailure);
+    assert.equal(result.approvalId, undefined);
+    assert.equal(result.verification, undefined);
+    assert.deepEqual(result.metrics, { observations: 1, nativeActions: 0, modelCalls: 0 });
+    assert.ok(result.fields.every(field => field.status === "skipped"));
+    assert.deepEqual(driver.values, before);
+    assert.equal(driver.actions.length, 0);
+    assert.equal(driver.cancels, 1);
+    assert.equal(engine.active, false);
+  }
+});
+
+test("batch coverage: loss before first dispatch consumes approval without writing", async () => {
+  for (const coverage of incompleteCoverage) {
+    const driver = new Driver(); const engine = new BatchEngine(driver);
+    const before = [...driver.values];
+    const review = await ready(engine);
+    assert.equal(review.status, "awaiting_approval");
+    loseCoverage(driver, 2, coverage);
+    const result = await approve(engine, review.id, review.approvalId!);
+    assert.equal(result.status, "failed", String(coverage));
+    assert.match(result.error!, coverageFailure);
+    assert.equal(result.verification, undefined);
+    assert.equal(result.approvalId, undefined);
+    assert.deepEqual(result.metrics, { observations: 2, nativeActions: 0, modelCalls: 0 });
+    assert.deepEqual(driver.values, before);
+    await assert.rejects(engine.approve(review.id, review.approvalId!));
+    assert.equal(driver.actions.length, 0);
+    assert.equal(driver.observations, 2, "coverage rejection must not retry observation");
+    assert.equal(engine.active, false);
+  }
+});
+
+test("batch coverage: loss before a later dispatch preserves verified edits without replay", async () => {
+  for (const coverage of incompleteCoverage) for (const observation of [4, 6]) {
+    const driver = new Driver(); const engine = new BatchEngine(driver);
+    const before = [...driver.values];
+    const review = await ready(engine);
+    loseCoverage(driver, observation, coverage);
+    const result = await approve(engine, review.id, review.approvalId!);
+    const written = observation === 4 ? 1 : 2;
+    assert.equal(result.status, "failed", `${coverage} at ${observation}`);
+    assert.match(result.error!, coverageFailure);
+    assert.equal(result.verification, undefined);
+    assert.equal(result.approvalId, undefined);
+    assert.deepEqual(result.metrics, { observations: observation, nativeActions: written, modelCalls: 0 });
+    assert.deepEqual(driver.values, before.map((value, index) => index < written ? Object.values(input.fields)[index] : value));
+    assert.ok(result.fields.slice(0, written).every(field => field.status === "verified" && field.after === field.proposed));
+    assert.equal(result.fields[written]!.status, "failed");
+    assert.ok(result.fields.slice(written + 1).every(field => field.status === "skipped"));
+    await assert.rejects(engine.approve(review.id, review.approvalId!));
+    assert.equal(driver.actions.length, written);
+    assert.equal(driver.observations, observation, "no replay, rollback or extra observation");
+    assert.equal(engine.active, false);
+  }
+});
+
+test("batch coverage: incomplete readback leaves the dispatched fill unverified", async () => {
+  for (const coverage of incompleteCoverage) {
+    const driver = new Driver(); const engine = new BatchEngine(driver);
+    const before = [...driver.values];
+    const review = await ready(engine);
+    loseCoverage(driver, 3, coverage);
+    const result = await approve(engine, review.id, review.approvalId!);
+    assert.equal(result.status, "failed", String(coverage));
+    assert.match(result.error!, coverageFailure);
+    assert.match(result.error!, /earlier writes may remain/);
+    assert.equal(result.verification, undefined);
+    assert.equal(result.approvalId, undefined);
+    assert.deepEqual(result.metrics, { observations: 3, nativeActions: 1, modelCalls: 0 });
+    assert.equal(result.fields[0]!.status, "failed", "dispatch is not verified readback");
+    assert.ok(result.fields.slice(1).every(field => field.status === "skipped"));
+    assert.deepEqual(driver.values, [input.fields.First, ...before.slice(1)], "the applied effect is retained");
+    await assert.rejects(engine.approve(review.id, review.approvalId!));
+    assert.equal(driver.actions.length, 1);
+    assert.equal(driver.observations, 3);
+    assert.equal(engine.active, false);
+  }
+});
+
+test("batch coverage: final acquisition loss cannot upgrade individual readbacks to batch completion", async () => {
+  for (const coverage of incompleteCoverage) {
+    const driver = new Driver(); const engine = new BatchEngine(driver);
+    const review = await ready(engine);
+    loseCoverage(driver, 8, coverage);
+    const result = await approve(engine, review.id, review.approvalId!);
+    assert.equal(result.status, "failed", String(coverage));
+    assert.match(result.error!, coverageFailure);
+    assert.equal(result.verification, undefined);
+    assert.equal(result.approvalId, undefined);
+    assert.deepEqual(result.metrics, { observations: 8, nativeActions: 3, modelCalls: 0 });
+    assert.deepEqual(driver.values, Object.values(input.fields));
+    assert.ok(result.fields.every(field => field.status === "verified" && field.after === field.proposed), "earlier complete readbacks remain historical evidence");
+    await assert.rejects(engine.approve(review.id, review.approvalId!));
+    assert.equal(driver.actions.length, 3);
+    assert.equal(driver.observations, 8);
+    assert.equal(engine.active, false);
+  }
+});
+
+test("batch coverage: complete native frames beyond compact limits still verify exact values", async () => {
+  const driver = new Driver(); const engine = new BatchEngine(driver);
+  const before = [...driver.values];
+  driver.mutate = snapshot => {
+    // The editable targets occur after the MCP response's 128-row maximum.
+    // BatchEngine operates on the full native acquisition, not that serializer.
+    for (let index = 0; index < 130; index++) snapshot.controls.unshift({
+      id: `static-${index}`, identity: `static-identity-${index}`, role: "AXStaticText", label: `Static ${index}`,
+      enabled: true, editable: false, source: "accessibility", actions: [],
+    });
+  };
+  const value = "東京".repeat(300);
+  const review = await ready(engine, { ...input, fields: { First: value } });
+  assert.equal(review.status, "awaiting_approval");
+  assert.equal(review.fields[0]!.before, before[0]);
+  assert.equal(driver.actions.length, 0);
+  const result = await approve(engine, review.id, review.approvalId!);
+  assert.equal(result.status, "completed");
+  assert.equal(result.verification, "native_readback");
+  assert.deepEqual(result.metrics, { observations: 4, nativeActions: 1, modelCalls: 0 });
+  assert.equal(result.fields[0]!.after, value);
+  assert.deepEqual(driver.values, [value, ...before.slice(1)]);
+  assert.equal(driver.actions[0]!.targetId, "control-2-0");
+  assert.equal(driver.cancels, 1);
+  assert.equal(engine.active, false);
 });

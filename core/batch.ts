@@ -173,6 +173,10 @@ export class BatchEngine {
         (snapshot.documentToken !== undefined && !literal(snapshot.documentToken, 256)) ||
         !Array.isArray(snapshot.controls) || snapshot.controls.length > 2000)
       throw new BatchFault("The app, window identity, or native observation is unavailable or changed.");
+    // Every preparation, rebind and final verification uses this acquisition gate.
+    // An unchanged returned field list cannot establish a complete native form.
+    if (snapshot.controlCoverage !== "complete")
+      throw new BatchFault("Native form coverage is incomplete or unknown. Inspect the app before preparing a new review; earlier writes may remain.");
     const ids = new Set<string>();
     for (const control of snapshot.controls) {
       if (!control || !literal(control.id, 512) || !control.id || ids.has(control.id) || !literal(control.label, 4096) ||
