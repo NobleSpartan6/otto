@@ -29,9 +29,14 @@
     "setup:codex": "node scripts/install-codex.mjs",
     "test:agent-native": "tsx tests/native/agent-bridge-smoke.ts",
     "eval:codex": "tsx tests/native/codex-agent-bridge-eval.ts",
+    "eval:astra-low": "tsx tests/native/codex-agent-bridge-eval.ts --pilot",
     "otto:task": "node scripts/otto-task.mjs",
     "eval:native-contracts": "tsx tests/native/contract-suite.ts",
-    "eval:replay": "tsx evals/replay.ts"
+    "eval:replay": "tsx evals/replay.ts",
+    "eval:paired-native": "tsx tests/native/agent-bridge-paired.ts",
+    "research": "tsx evals/autoresearch.ts",
+    "demo:locked-cut": "vite --config examples/locked-cut/vite.config.ts",
+    "test:locked-cut": "tsx --test examples/locked-cut/*.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
