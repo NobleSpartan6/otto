@@ -12,12 +12,15 @@ import type {
   Permissions,
 } from "../shared/types.js";
 import { LocalOCR } from "./ocr.js";
+import { AgentLease, AgentLeaseBusyError } from "./agent-lease.js";
 
 export class PlatformDriver implements NativeDriver {
   private child?: ChildProcessWithoutNullStreams;
   private captureDirectory?: string;
   private ocr = new LocalOCR();
   private epoch = 0;
+  private leaseHeld = false;
+  private stoppingChildren = 0;
   private ocrTargets = new Map<
     string,
     { snapshotId: string; point: { x: number; y: number } }
@@ -33,9 +36,11 @@ export class PlatformDriver implements NativeDriver {
   constructor(
     private resourcePath: string,
     private packaged: boolean,
+    private readonly desktopLease?: AgentLease,
   ) {}
 
   private boot() {
+    if (this.stoppingChildren) throw new Error("The previous native helper is still stopping. Wait before starting a new task.");
     if (this.child) return this.child;
     const path = this.packaged
       ? join(this.resourcePath, "native")
@@ -167,9 +172,13 @@ export class PlatformDriver implements NativeDriver {
     return this.request<Permissions>("requestPermission", { kind });
   }
   async configure(appIds: string[]) {
-    await this.request("configure", { appIds });
+    if (this.stoppingChildren) throw new AgentLeaseBusyError();
+    if (this.desktopLease) { this.desktopLease.acquire(); this.leaseHeld = true; }
+    try { await this.request("configure", { appIds }); }
+    catch (error) { this.cancel(); throw error; }
   }
   async observe(appId: string) {
+    this.assertDesktopOwnership();
     const epoch = this.epoch;
     const snapshot = await this.request<NativeSnapshot>("observe", { appId });
     if (this.epoch !== epoch) throw new Error("Observation cancelled.");
@@ -206,6 +215,7 @@ export class PlatformDriver implements NativeDriver {
     return snapshot;
   }
   async act(action: NativeAction) {
+    this.assertDesktopOwnership();
     const ocr = action.targetId
       ? this.ocrTargets.get(action.targetId)
       : undefined;
@@ -228,6 +238,10 @@ export class PlatformDriver implements NativeDriver {
     void this.ocr.close();
     const child = this.child;
     this.child = undefined;
+    if (child && this.desktopLease) {
+      this.stoppingChildren++;
+      child.once("close", () => { this.stoppingChildren--; this.releaseDesktopOwnership(); });
+    }
     for (const request of this.pending.values()) {
       clearTimeout(request.timer);
       request.reject(
@@ -250,5 +264,17 @@ export class PlatformDriver implements NativeDriver {
       rmSync(this.captureDirectory, { recursive: true, force: true });
       this.captureDirectory = undefined;
     }
+    this.releaseDesktopOwnership();
+  }
+
+  private assertDesktopOwnership() {
+    if (!this.desktopLease) return; // MCP owns its lease at the server boundary.
+    if (!this.leaseHeld || this.stoppingChildren) throw new AgentLeaseBusyError();
+    this.desktopLease.assertOwned();
+  }
+  private releaseDesktopOwnership() {
+    if (!this.desktopLease || !this.leaseHeld || this.stoppingChildren) return;
+    try { this.desktopLease.release(); this.leaseHeld = false; }
+    catch { /* Keep failed ownership reserved; a later acquisition must revalidate it. */ }
   }
 }

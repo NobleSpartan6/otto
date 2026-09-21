@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
-import type { NativeSnapshot } from "../shared/types.js";
+import { randomBytes } from "node:crypto";
+import type { ControlCoverage, NativeSnapshot } from "../shared/types.js";
 import { isSensitive } from "./candidates.js";
 
 export const DEVELOPER_TTL_MS = 30_000;
@@ -23,6 +23,7 @@ export interface CompactControl {
   actions: string[];
 }
 export interface CompactObservation {
+  controlCoverage: ControlCoverage;
   version: 1;
   snapshotToken: string;
   app: { id: string; name: string; pid: number };
@@ -263,8 +264,10 @@ export class DeveloperSession {
       });
     const cleanedText = scrub(snapshot.text);
     const result: CompactObservation = {
+      controlCoverage: snapshot.controlCoverage === "complete" || snapshot.controlCoverage === "partial" ? snapshot.controlCoverage : "unknown",
       version: 1,
-      snapshotToken: randomUUID(),
+      // Opaque session token: retain 128 random bits without UUID punctuation.
+      snapshotToken: randomBytes(16).toString("base64url"),
       app: {
         id: snapshot.app.id,
         name: scrub(snapshot.app.name),

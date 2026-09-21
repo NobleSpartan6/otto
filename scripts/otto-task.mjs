@@ -32,18 +32,26 @@ export function parseTaskArgs(args) {
   const seen = new Set();
   for (let i = 1; i < args.length; i++) {
     const flag = args[i];
-    if (!['--app', '--app-name', '--file'].includes(flag) || seen.has(flag)) throw new TaskError('Unknown or repeated argument. Use --help.');
+    if (!['--app', '--app-name', '--file', '--max-controls', '--max-text-chars', '--receipt'].includes(flag) || seen.has(flag)) throw new TaskError('Unknown or repeated argument. Use --help.');
     seen.add(flag);
     const value = args[++i];
     if (typeof value !== 'string' || !value || value.startsWith('--') || /[\x00-\x1f\x7f]/u.test(value)) throw new TaskError('An argument value is missing or invalid.');
-    if (flag === '--file') options.file = resolve(value);
+    if (flag === '--max-controls' || flag === '--max-text-chars') {
+      const number = Number(value), controls = flag === '--max-controls';
+      if (command !== 'inspect' || !/^(0|[1-9]\d*)$/.test(value) || !Number.isSafeInteger(number) ||
+          number < (controls ? 1 : 0) || number > (controls ? 128 : 16000))
+        throw new TaskError('Inspection limits require inspect: --max-controls 1..128, --max-text-chars 0..16000.');
+      options.inspectLimits ??= {};
+      options.inspectLimits[controls ? 'maxControls' : 'maxTextChars'] = number;
+    } else if (flag === '--receipt') options.receipt = resolve(value);
+    else if (flag === '--file') options.file = resolve(value);
     else {
       if (!scopeValue(value)) throw new TaskError('Choose one exact native app ID or running application name.');
       options[flag === '--app' ? 'appId' : 'appName'] = value;
     }
   }
   if (command === 'list-apps') {
-    if (seen.size) throw new TaskError('Use list-apps without app scope or a workflow file.');
+    if (seen.size > (seen.has('--receipt') ? 1 : 0)) throw new TaskError('Use list-apps without app scope or a workflow file.');
   } else {
     if (Boolean(options.appId) === Boolean(options.appName)) throw new TaskError('Choose exactly one --app ID or --app-name name.');
     if ((command === 'run-steps') !== Boolean(options.file)) throw new TaskError('Only run-steps requires and accepts --file.');
@@ -68,7 +76,10 @@ export function validateTaskFile(value) {
     }
   }
   if (chars > 16_000) invalidWorkflow();
-  if (value.expected !== undefined) {
+  if (value.expected === 'filled_values') {
+    if (value.steps.some(step => step.operation !== 'fill') ||
+        new Set(value.steps.map(step => step.label.trim().normalize('NFC'))).size !== value.steps.length) invalidWorkflow();
+  } else if (value.expected !== undefined) {
     if (!exactKeys(value.expected, ['values', 'textIncludes'])) invalidWorkflow();
     let checks = 0;
     if (value.expected.values !== undefined) {
@@ -160,11 +171,17 @@ async function discover(signal) {
   } catch { throw new TaskError('App discovery failed or timed out. No permission change or retry was attempted.', 2); }
 }
 
-/** Test injection is programmatic only; CLI flags and environment cannot select another server. */
-export async function runTask(options, dependencies = {}) {
+async function executeTask(options, dependencies, metrics, checkpoint) {
   const signal = dependencies.signal ? AbortSignal.any([dependencies.signal, AbortSignal.timeout(180_000)]) : AbortSignal.timeout(180_000);
+  if (signal.aborted) throw new TaskError('Otto request cancelled before execution.', 2);
   if (options.command === 'list-apps') {
+    metrics.pendingOperation = { kind: 'app_discovery' };
+    await checkpoint('intent');
+    if (signal.aborted) throw new TaskError('Otto request cancelled before discovery.', 2);
+    metrics.discoveryAttempts++;
     const result = await (dependencies.discover ?? discover)(signal);
+    metrics.pendingOperation = null;
+    await checkpoint('result');
     return { output: JSON.stringify({ apps: appList(result) }), exitCode: 0 };
   }
   const workflow = options.command === 'run-steps' ? await readTaskFile(options.file) : undefined;
@@ -172,10 +189,21 @@ export async function runTask(options, dependencies = {}) {
   let connected;
   try {
     connected = await (dependencies.connect ?? connection)(options, signal);
+    metrics.manifestRequests++;
     const manifest = await connected.client.listTools({}, { signal, timeout: 30_000 });
     if (!Array.isArray(manifest.tools) || !manifest.tools.some(tool => tool.name === 'release_control'))
       throw new TaskError('This Otto build lacks desktop ownership coordination. Rebuild this checkout before using the one-shot client.', 2);
-    const call = (name, args) => connected.client.callTool({ name, arguments: args }, undefined, { signal, timeout: 150_000 });
+    const call = async (name, args) => {
+      metrics.pendingOperation = { kind: 'tool_call', name, ordinal: metrics.toolCallAttempts + 1 };
+      await checkpoint('intent');
+      if (signal.aborted) throw new TaskError('Otto request cancelled before the pending call. Inspect before retrying.', 2);
+      metrics.toolCallAttempts++;
+      const result = await connected.client.callTool({ name, arguments: args }, undefined, { signal, timeout: 150_000 });
+      metrics.toolResultsReceived++;
+      metrics.pendingOperation = null;
+      await checkpoint('result');
+      return result;
+    };
     let appId = options.appId;
     if (options.appName) {
       const listed = await call('list_apps', {});
@@ -185,12 +213,24 @@ export async function runTask(options, dependencies = {}) {
       if (apps.length !== 1 || apps[0].name !== options.appName) throw new TaskError('The exact scoped app name is missing or ambiguous. Choose its current native ID; no action was attempted.', 2);
       appId = apps[0].id;
     }
-    const result = await call(options.command === 'inspect' ? 'inspect' : 'run_steps', { appId, ...(workflow ?? {}) });
+    const result = await call(options.command === 'inspect' ? 'inspect' : 'run_steps', {
+      appId, ...(workflow ?? {}), ...(options.command === 'inspect' ? options.inspectLimits ?? {} : {}),
+    });
     const output = toolText(result);
     if (result.isError) return { output, exitCode: 2 };
     if (options.command === 'run-steps') {
       const receipt = JSON.parse(output);
       if (!plain(receipt) || !['verified', 'completed', 'stopped'].includes(receipt.status)) throw new TaskError('Otto returned an invalid workflow receipt. Inspect before retrying.', 2);
+      const count = value => Number.isSafeInteger(value) && value >= 0 ? value : null;
+      const checks = Array.isArray(receipt.checks) && receipt.checks.every(check => plain(check) && typeof check.matched === 'boolean') ? receipt.checks : null;
+      metrics.workflow = {
+        source: 'executor_receipt', status: receipt.status,
+        actions: count(receipt.actions), completedSteps: count(receipt.completedSteps),
+        observations: count(receipt.observations), modelCalls: count(receipt.modelCalls),
+        elapsedMs: count(receipt.elapsedMs), uncertainAction: receipt.uncertainAction === true,
+        checksMatched: checks ? checks.filter(check => check.matched).length : null,
+        checksUnmatched: checks ? checks.filter(check => !check.matched).length : null,
+      };
       return { output, exitCode: receipt.status === 'stopped' || receipt.uncertainAction === true ? 2 : 0 };
     }
     return { output, exitCode: 0 };
@@ -200,10 +240,48 @@ export async function runTask(options, dependencies = {}) {
   } finally { await connected?.close(); }
 }
 
+/** Test injection is programmatic only; CLI flags and environment cannot select another server. */
+export async function runTask(options, dependencies = {}) {
+  let report;
+  if (options.receipt) {
+    try { report = await open(options.receipt, 'wx', 0o600); }
+    catch { throw new TaskError('Could not create a new receipt file. Choose a new path in an existing directory; no task was started.'); }
+  }
+  const started = performance.now();
+  const metrics = { schemaVersion: 2, command: options.command, startedAt: new Date().toISOString(),
+    toolCallAttempts: 0, toolResultsReceived: 0, manifestRequests: 0, discoveryAttempts: 0,
+    pendingOperation: null, workflow: null, returnedTextBytes: null, actualHostUsage: null, comparisonBaseline: null, claimedSavings: null };
+  let journalFailed = false, sequence = 0;
+  const append = async value => {
+    if (!report) return;
+    if (journalFailed) throw new TaskError('Receipt checkpoint failed. The task may have run; inspect actual state before retrying.', 2);
+    try { await report.writeFile(JSON.stringify({ sequence: ++sequence, ...value }) + '\n'); await report.sync(); }
+    catch {
+      journalFailed = true;
+      throw new TaskError('Receipt checkpoint failed. The task may have run; inspect actual state before retrying.', 2);
+    }
+  };
+  const checkpoint = phase => append({ ...metrics, phase, status: 'incomplete', elapsedMs: Math.round(performance.now() - started) });
+  let result, failure, failed = false;
+  try { await checkpoint('started'); result = await executeTask(options, dependencies, metrics, checkpoint); }
+  catch (error) { failed = true; failure = error; }
+  const receipt = { ...metrics, phase: 'final', status: failed ? 'error' : result.exitCode ? 'stopped_or_error' : 'finished',
+    exitCode: failed ? failure instanceof TaskError ? failure.exitCode : 2 : result.exitCode,
+    elapsedMs: Math.round(performance.now() - started),
+    returnedTextBytes: result ? Buffer.byteLength(result.output + '\n') : null };
+  if (report) {
+    try { await append(receipt); }
+    catch { throw new TaskError('Receipt could not be saved. The task may have run; inspect actual state before retrying.', 2); }
+    finally { await report.close(); }
+  }
+  if (failed) throw failure;
+  return result;
+}
+
 export async function main(args = process.argv.slice(2)) {
   const options = parseTaskArgs(args);
   if (options.help) {
-    process.stdout.write('Use Otto in an already-running agent task (one-shot local MCP client).\n  node scripts/otto-task.mjs list-apps\n  node scripts/otto-task.mjs inspect --app <native-id>\n  node scripts/otto-task.mjs inspect --app-name <exact-name>\n  node scripts/otto-task.mjs run-steps --app <native-id> --file <workflow.json>\n  node scripts/otto-task.mjs run-steps --app-name <exact-name> --file <workflow.json>\nWorkflow file: {"steps":[...],"expected":{...}}; no appId, credentials, or provider key.\nrun-steps opts into native writes for that one app. Use only within the user-authorized task.\nNo config changes, retries, fallback executor, or Jev calls.\n'); return;
+    process.stdout.write('Use Otto in an already-running agent task (one-shot local MCP client).\n  node scripts/otto-task.mjs list-apps\n  node scripts/otto-task.mjs inspect --app <native-id>\n  node scripts/otto-task.mjs inspect --app-name <exact-name>\n  node scripts/otto-task.mjs run-steps --app <native-id> --file <workflow.json>\n  node scripts/otto-task.mjs run-steps --app-name <exact-name> --file <workflow.json>\ninspect options: --max-controls 1..128, --max-text-chars 0..16000 (0 omits free text, not control labels/values).\nOptional --receipt <new-path.jsonl> saves content-free execution metrics; never overwrites.\nWorkflow file: {"steps":[...],"expected":{...}}; no appId, credentials, or provider key.\nUse "expected":"filled_values" to verify all fill literals; fill-only steps with distinct trim+NFC labels required.\nrun-steps opts into native writes for that one app. Use only within the user-authorized task.\nNo config changes, retries, fallback executor, or Jev calls.\n'); return;
   }
   const controller = new AbortController();
   const cancel = () => controller.abort();

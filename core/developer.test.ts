@@ -283,3 +283,15 @@ test("rejects executable extra fields, malformed literals and excessive request 
     code("invalid_input"),
   );
 });
+
+
+test("inspection reports native coverage separately from output truncation and treats legacy metadata as unknown", () => {
+  for (const coverage of ["complete", "partial", undefined] as const) {
+    const snapshot = formFixture(4);
+    snapshot.controlCoverage = coverage;
+    const result = session().inspect(snapshot);
+    assert.equal(result.controlCoverage, coverage ?? "unknown");
+    assert.equal(result.truncation.controlsOmitted, 0);
+    assert.ok(formatObservation(result).includes('"controlCoverage":"' + (coverage ?? "unknown") + '"'));
+  }
+});

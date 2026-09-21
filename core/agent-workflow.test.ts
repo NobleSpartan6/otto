@@ -9,7 +9,7 @@ function fixture(options: { interfere?: boolean; reject?: boolean; omit?: boolea
   let values = ["", ""];
   let dispatched = 0;
   let inspected = 0;
-  const frame = (): CompactObservation => ({ version: 1, snapshotToken: `s${inspected}`, app: { id: "fixture", name: "Fixture", pid: 1 }, title: "Form", capturedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 30000).toISOString(), text: values.join(" "),
+  const frame = (): CompactObservation => ({ controlCoverage: "complete", version: 1, snapshotToken: `s${inspected}`, app: { id: "fixture", name: "Fixture", pid: 1 }, title: "Form", capturedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 30000).toISOString(), text: values.join(" "),
     controls: values.map((value, i) => ({ ref: `c${i + 1}`, role: "text", label: ["Name", "City"][i]!, value, enabled: true, editable: true, source: "accessibility", actions: ["fill"] })),
     redacted: options.redact ?? false, sensitiveControlsOmitted: 0, truncation: { controlsOmitted: options.omit ? 1 : 0, text: { originalChars: 0, sanitizedChars: 0, returnedChars: 0, truncated: false }, title: false, details: [] } });
   const session = {
@@ -45,10 +45,77 @@ test("exact workflow verifies final state with no model calls", async () => {
   assert.equal(fake.inspected, 2); assert.deepEqual(fake.values, ["Ada", "London"]);
   assert.ok(result.checks.every(check => check.matched));
 });
+test("filled_values derives the same exact checks as explicit expectations, including empty literals", async () => {
+  for (const fillSteps of [steps, [{ operation: "fill" as const, label: "Name", value: "" }, steps[1]!]]) {
+    const explicit = fixture(), shorthand = fixture();
+    const baseline = await runSteps(explicit.session, { appId: "fixture", steps: fillSteps,
+      expected: { values: Object.fromEntries(fillSteps.map(step => [step.label, step.value])) } });
+    const candidate = await runSteps(shorthand.session, { appId: "fixture", steps: fillSteps, expected: "filled_values" });
+    assert.deepEqual({ ...candidate, elapsedMs: 0 }, { ...baseline, elapsedMs: 0 });
+    assert.equal(candidate.status, "verified");
+    assert.deepEqual(shorthand.values, explicit.values);
+  }
+});
+test("filled_values rejects mixed operations and duplicate normalized labels before inspection", async () => {
+  for (const fillSteps of [
+    [steps[0]!, { operation: "key" as const, value: "tab" }],
+    [steps[0]!, { operation: "press" as const, label: "Submit" }],
+    [steps[0]!, { ...steps[0]!, label: " Name " }],
+    [{ operation: "fill" as const, label: "Café", value: "one" }, { operation: "fill" as const, label: " Cafe\u0301 ", value: "two" }],
+  ]) {
+    const fake = fixture();
+    await assert.rejects(runSteps(fake.session, { appId: "fixture", steps: fillSteps, expected: "filled_values" }), WorkflowError);
+    assert.equal(fake.inspected, 0); assert.equal(fake.dispatched, 0);
+  }
+});
+test("filled_values cannot be used by delegate and unknown expectation strings remain invalid", async () => {
+  const fake = fixture();
+  await assert.rejects(delegateTask(fake.session, { appId: "fixture", goal: "Fill", allowedActions: steps,
+    expected: "filled_values" } as never, "fake-unit-key"), WorkflowError);
+  assert.equal(fake.inspected, 0); assert.equal(fake.dispatched, 0);
+  assert.throws(() => validateWorkflow({ appId: "fixture", steps, expected: "filled" }), WorkflowError);
+});
+test("filled_values keeps its literal actions and checks fixed while inspection awaits", async () => {
+  const fake = fixture();
+  const input = { appId: "fixture", steps: structuredClone(steps), expected: "filled_values" as const };
+  const inspect = fake.session.inspect.bind(fake.session);
+  fake.session.inspect = async (...args) => {
+    input.steps[0]!.value = "Changed by caller";
+    input.steps.push({ operation: "fill", label: "Other", value: "Unauthorized" });
+    return inspect(...args);
+  };
+  const result = await runSteps(fake.session, input);
+  assert.equal(result.status, "verified"); assert.equal(result.actions, 2);
+  assert.deepEqual(fake.values, ["Ada", "London"]);
+  assert.deepEqual(result.checks.map(check => check.label), ["Name", "City"]);
+});
 test("all-field preflight prevents partial writes when a later target is missing", async () => {
   const fake = fixture();
   const result = await runSteps(fake.session, { appId: "fixture", steps: [steps[0]!, { operation: "fill", label: "Missing", value: "x" }] });
   assert.equal(result.status, "stopped"); assert.equal(fake.dispatched, 0);
+  assert.deepEqual(result.targetResolution, { code: "target_missing", matchCount: 0, controlsOmitted: 0, truncatedIdentity: false, controlCoverage: "complete" });
+});
+test("target diagnostics distinguish ambiguity from incomplete observations without dispatch or app text", async () => {
+  for (const mode of ["duplicate", "omitted", "truncated", "partial", "unknown"] as const) {
+    const fake = fixture({ omit: mode === "omitted" });
+    const inspect = fake.session.inspect.bind(fake.session);
+    fake.session.inspect = async (...args) => {
+      const frame = await inspect(...args);
+      if (mode === "partial" || mode === "unknown") frame.controlCoverage = mode;
+      if (mode === "duplicate") frame.controls.push({ ...frame.controls[0]!, ref: "other" });
+      if (mode === "truncated") frame.truncation.details.push({ ref: "c1", fields: ["label"] });
+      return frame;
+    };
+    const result = await runSteps(fake.session, { appId: "fixture", steps });
+    assert.equal(result.status, "stopped"); assert.equal(fake.dispatched, 0); assert.equal(fake.inspected, 1);
+    assert.deepEqual(result.targetResolution, {
+      code: mode === "duplicate" ? "target_ambiguous" : "incomplete_observation",
+      matchCount: mode === "duplicate" ? 2 : null,
+      controlsOmitted: mode === "omitted" ? 1 : 0, truncatedIdentity: mode === "truncated",
+      controlCoverage: mode === "partial" || mode === "unknown" ? mode : "complete",
+    });
+    assert.ok(!JSON.stringify(result.targetResolution).includes("Name"));
+  }
 });
 test("interference stops the remaining writes and preserves user changes", async () => {
   const fake = fixture({ interfere: true });

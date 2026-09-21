@@ -22,7 +22,11 @@ export interface NativeControl {
   source?: "accessibility" | "ocr";
   bounds?: { x: number; y: number; width: number; height: number };
 }
+export type ControlCoverage = "complete" | "partial" | "unknown";
+
 export interface NativeSnapshot {
+  /** Coverage of eligible controls in the selected native tree, not the whole app. */
+  controlCoverage?: ControlCoverage;
   snapshotId: string;
   app: DesktopApp;
   title: string;

@@ -15,7 +15,7 @@ class Driver implements NativeDriver {
   async configure(ids: string[]) { this.configured.push([...ids]); }
   async observe(): Promise<NativeSnapshot> {
     const count = ++this.observed;
-    const snapshot: NativeSnapshot = { snapshotId: `snapshot-${count}`, windowToken: "window-1", documentToken: "document-1", app: { ...app },
+    const snapshot: NativeSnapshot = { controlCoverage: "complete", snapshotId: `snapshot-${count}`, windowToken: "window-1", documentToken: "document-1", app: { ...app },
       title: "Fixture form", text: "Useful document text", capturedAt: new Date().toISOString(), screenshot: "SECRET_SCREENSHOT",
       controls: [
         { id: `field-${count}`, identity: "field-native", role: "AXTextField", label: "Name", value: this.value, enabled: true, editable: true, source: "accessibility", actions: ["fill"], bounds: { x: 1, y: 2, width: 200, height: 30 } },
@@ -305,4 +305,27 @@ test("cancellation during configuration cannot mark a killed helper as configure
   await assert.rejects(pending, code("cancelled"));
   await session.inspect("fixture");
   assert.equal(driver.configured.length, 2); assert.equal(driver.actions.length, 0);
+});
+
+
+test("partial and legacy native coverage cannot verify unique label values", async () => {
+  for (const coverage of ["partial", undefined] as const) {
+    const driver = new Driver();
+    driver.mutate = snapshot => { snapshot.controlCoverage = coverage; };
+    const session = new AgentSession(driver, [app.id]);
+    await session.inspect(app.id);
+    assert.deepEqual(session.matchesValues({ Name: "Before" }), [{ label: "Name", matched: false }]);
+  }
+});
+
+
+test("explicit native refs remain usable on a partial tree without claiming label uniqueness", async () => {
+  const { driver, session } = fixture();
+  driver.mutate = snapshot => { snapshot.controlCoverage = "partial"; };
+  const observation = await session.inspect("fixture");
+  const result = await session.act({ snapshotToken: observation.snapshotToken, ref: "c1", operation: "fill", value: "Exact" });
+  assert.equal(result.outcome, "verified");
+  assert.equal(driver.actions.length, 1);
+  assert.equal(result.observation.controlCoverage, "partial");
+  assert.deepEqual(session.matchesValues({ Name: "Exact" }), [{ label: "Name", matched: false }]);
 });

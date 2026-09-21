@@ -38,7 +38,7 @@ class Driver implements NativeDriver {
     if (this.withOcrLabels) for (const label of ["Name", "City"]) controls.push({
       id: `ocr-${label}-${count}`, role: "OCRText", label, enabled: true, editable: false, source: "ocr", actions: ["press"],
     });
-    return { snapshotId: `snapshot-${count}`, app: { ...this.app }, windowToken: this.resetWindowOnConfigure ? `window-${this.configureCalls}` : "window-1", documentToken: "document-1",
+    return { controlCoverage: "complete", snapshotId: `snapshot-${count}`, app: { ...this.app }, windowToken: this.resetWindowOnConfigure ? `window-${this.configureCalls}` : "window-1", documentToken: "document-1",
       title: "Fixture", text: "Native fixture text", screenshot: "SECRET_SCREENSHOT", capturedAt: new Date().toISOString(), controls };
   }
   async act(action: NativeAction) {
@@ -136,6 +136,83 @@ test("run_steps returns exact checks and real observation count without a model"
   assert.deepEqual(receipt.checks, [{ kind: "value", label: "Name", matched: true }, { kind: "value", label: "City", matched: true }]);
   assert.deepEqual(driver.values, ["Ada", "Paris"]);
   assert.ok(driver.actions.every(action => action.kind === "fill"));
+});
+
+test("run_steps preserves compact target diagnostics through MCP without dispatching", async t => {
+  const { driver, call } = await setup(t);
+  const result = await call("run_steps", { appId: "fixture", steps: [{ operation: "press", label: "Missing panel" }] });
+  assert.equal(isError(result), false);
+  const receipt = JSON.parse(text(result));
+  assert.equal(receipt.status, "stopped"); assert.equal(receipt.actions, 0);
+  assert.deepEqual(receipt.targetResolution, { code: "target_missing", matchCount: 0, controlsOmitted: 0, truncatedIdentity: false, controlCoverage: "complete" });
+  assert.equal(driver.actions.length, 0); assert.equal(driver.observed, 1);
+  assert.ok(!text(result).includes("SECRET_SCREENSHOT"));
+});
+
+test("only run_steps advertises filled_values, preserving delegate's explicit expected schema", async t => {
+  const { client } = await setup(t);
+  const manifest = await client.listTools();
+  const run = manifest.tools.find(tool => tool.name === "run_steps")!.inputSchema.properties!.expected as { anyOf: unknown[] };
+  const delegated = manifest.tools.find(tool => tool.name === "delegate")!.inputSchema.properties!.expected;
+  assert.deepEqual(run.anyOf, [delegated, { const: "filled_values", type: "string" }]);
+  assert.doesNotMatch(JSON.stringify(delegated), /filled_values/);
+});
+
+test("filled_values verifies full long native values with the same result as explicit checks", async t => {
+  const literal = "界".repeat(1800);
+  const results: unknown[] = [];
+  for (const expected of [{ values: { Name: literal, City: "" } }, "filled_values"]) {
+    const { driver, call } = await setup(t);
+    const result = await call("run_steps", { appId: "fixture", steps: [
+      { operation: "fill", label: "Name", value: literal }, { operation: "fill", label: "City", value: "" },
+    ], expected });
+    assert.equal(isError(result), false, text(result));
+    const receipt = JSON.parse(text(result));
+    assert.equal(receipt.status, "verified", receipt.reason);
+    assert.equal(receipt.actions, 2); assert.equal(receipt.modelCalls, 0); assert.equal(receipt.observations, 6);
+    assert.deepEqual(driver.values, [literal, ""]);
+    assert.deepEqual(receipt.checks, [{ kind: "value", label: "Name", matched: true }, { kind: "value", label: "City", matched: true }]);
+    results.push({ ...receipt, elapsedMs: 0 });
+  }
+  assert.deepEqual(results[0], results[1]);
+});
+
+test("filled_values rejects a changed long value at final inspection without replaying", async t => {
+  const literal = "界".repeat(1800);
+  for (const expected of [{ values: { Name: literal } }, "filled_values"]) {
+    const { driver, call } = await setup(t);
+    driver.beforeObserve = async count => { if (count === 4) driver.values[0] = literal.slice(0, 512); };
+    const result = await call("run_steps", { appId: "fixture", steps: [{ operation: "fill", label: "Name", value: literal }], expected });
+    assert.equal(isError(result), false, text(result));
+    const receipt = JSON.parse(text(result));
+    assert.equal(receipt.status, "stopped"); assert.equal(receipt.actions, 1); assert.equal(receipt.modelCalls, 0);
+    assert.equal(driver.actions.length, 1); assert.equal(driver.values[0], literal.slice(0, 512));
+  }
+});
+
+test("invalid filled_values workflows cannot inspect or dispatch through MCP", async t => {
+  const { driver, call } = await setup(t);
+  for (const steps of [
+    [{ operation: "fill", label: "Name", value: "Ada" }, { operation: "key", value: "enter" }],
+    [{ operation: "fill", label: "Name", value: "Ada" }, { operation: "fill", label: " Name ", value: "Other" }],
+  ]) {
+    const result = await call("run_steps", { appId: "fixture", steps, expected: "filled_values" });
+    assert.equal(isError(result), true); assert.match(text(result), /distinct normalized labels/);
+  }
+  const delegated = await call("delegate", { appId: "fixture", goal: "Fill", allowedActions: [{ operation: "fill", label: "Name", value: "Ada" }], expected: "filled_values" });
+  assert.equal(isError(delegated), true); assert.match(text(delegated), /expected field values/);
+  assert.equal(driver.observed, 0); assert.equal(driver.actions.length, 0);
+});
+
+test("explicit checks for untouched fields remain required even when the fill succeeds", async t => {
+  const { driver, call } = await setup(t);
+  const result = await call("run_steps", { appId: "fixture", steps: [{ operation: "fill", label: "Name", value: "Ada" }],
+    expected: { values: { Name: "Ada", City: "Paris" } } });
+  assert.equal(isError(result), false, text(result));
+  const receipt = JSON.parse(text(result));
+  assert.equal(receipt.status, "stopped"); assert.equal(receipt.actions, 1);
+  assert.deepEqual(receipt.checks, [{ kind: "value", label: "Name", matched: true }, { kind: "value", label: "City", matched: false }]);
+  assert.deepEqual(driver.values, ["Ada", "London"]);
 });
 
 test("failed readback cannot produce verified completion or replay the write", async t => {
@@ -307,4 +384,20 @@ test("release_control reports failed removal, preserves ownership, and stop does
     assert.equal(JSON.parse(text(await two.call("inspect", { appId: "fixture" }))).code, "desktop_busy");
   } finally { t.mock.restoreAll(); syncBuiltinESMExports(); one.lease.release(); }
   assert.equal(isError(await two.call("inspect", { appId: "fixture" })), false);
+});
+
+test("MCP distinguishes native partial and legacy coverage from serialization omissions", async t => {
+  for (const coverage of ["partial", undefined] as const) {
+    const { driver, call } = await setup(t);
+    const observe = driver.observe.bind(driver);
+    driver.observe = async appId => ({ ...await observe(appId), controlCoverage: coverage });
+    const result = await call("run_steps", { appId: "fixture", steps: [{ operation: "fill", label: "Name", value: "Ada" }], expected: "filled_values" });
+    const receipt = JSON.parse(text(result));
+    assert.equal(receipt.status, "stopped");
+    assert.equal(receipt.actions, 0);
+    assert.deepEqual(receipt.targetResolution, { code: "incomplete_observation", matchCount: null,
+      controlsOmitted: 0, truncatedIdentity: false, controlCoverage: coverage ?? "unknown" });
+    assert.equal(driver.actions.length, 0);
+    assert.deepEqual(driver.values, ["Before", "London"]);
+  }
 });

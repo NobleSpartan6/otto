@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, writeFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, stat, open, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { parseTaskArgs, validateTaskFile, readTaskFile, runTask, serverArguments, serverEnvironment, MAX_FILE_BYTES } from './otto-task.mjs';
 
 const task = { steps: [{ operation: 'fill', label: 'Name', value: 'Ada' }], expected: { values: { Name: 'Ada' } } };
+const finalReceipt = saved => JSON.parse(saved.trim().split('\n').at(-1));
 const text = (value, isError = false) => ({ content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) }], isError });
 async function file(t, value = task) {
   const dir = await mkdtemp(join(tmpdir(), 'otto-task-test-'));
@@ -36,6 +38,175 @@ test('launcher accepts one exact scope and rejects authority/command overrides',
   for (const key of ['TYPESAFE_API_KEY', 'OPENAI_API_KEY', 'CODEX_API_KEY']) assert.equal(Object.hasOwn(serverEnvironment(), key), false);
 });
 
+test('inspection budgets forward exact bounds without adding writes or changing app scope', async () => {
+  for (const scope of [['--app', '123'], ['--app-name', 'TextEdit']]) {
+    const options = parseTaskArgs(['inspect', ...scope, '--max-controls', '128', '--max-text-chars', '0']);
+    const mock = fake(request => request.name === 'list_apps'
+      ? text({ apps: [{ id: '123', name: 'TextEdit' }] }) : text('compact observation'));
+    const result = await runTask(options, mock);
+    assert.equal(result.exitCode, 0);
+    assert.deepEqual(mock.state.calls.at(-1), { name: 'inspect', arguments: { appId: '123', maxControls: 128, maxTextChars: 0 } });
+    assert.ok(!serverArguments(options).includes('--allow-actions'));
+    assert.equal(mock.state.closes, 1);
+  }
+  assert.deepEqual(parseTaskArgs(['inspect', '--app', '123', '--max-controls', '1', '--max-text-chars', '16000']).inspectLimits,
+    { maxControls: 1, maxTextChars: 16000 });
+});
+
+test('optional receipt records scoped workflow counters without retaining app content', async t => {
+  const path = await file(t), receiptPath = join(path, '..', 'receipt.json');
+  const options = parseTaskArgs(['run-steps', '--app-name', 'Private App', '--file', path, '--receipt', receiptPath]);
+  const mock = fake(request => request.name === 'list_apps'
+    ? text({ apps: [{ id: 'private-id', name: 'Private App' }] })
+    : text({ status: 'verified', actions: 1, completedSteps: 1, observations: 4, modelCalls: 0, elapsedMs: 25,
+      checks: [{ label: 'PRIVATE_FIELD', matched: true }], privateExtra: 'PRIVATE_VALUE' }));
+  const result = await runTask(options, mock);
+  const saved = await readFile(receiptPath, 'utf8'), receipt = finalReceipt(saved);
+  assert.equal(receipt.status, 'finished'); assert.equal(receipt.exitCode, 0);
+  assert.equal(receipt.toolCallAttempts, 2); assert.equal(receipt.toolResultsReceived, 2);
+  assert.equal(receipt.manifestRequests, 1); assert.equal(receipt.discoveryAttempts, 0);
+  assert.equal(receipt.returnedTextBytes, Buffer.byteLength(result.output + '\n'));
+  assert.deepEqual(receipt.workflow, { source: 'executor_receipt', status: 'verified', actions: 1, completedSteps: 1,
+    observations: 4, modelCalls: 0, elapsedMs: 25, uncertainAction: false, checksMatched: 1, checksUnmatched: 0 });
+  for (const secret of ['Private App', 'private-id', 'PRIVATE_FIELD', 'PRIVATE_VALUE', 'Ada', path]) assert.ok(!saved.includes(secret));
+  for (const key of ['actualHostUsage', 'comparisonBaseline', 'claimedSavings']) assert.equal(receipt[key], null);
+  assert.ok(Number.isInteger(receipt.elapsedMs) && receipt.elapsedMs >= 0);
+  assert.equal(mock.state.closes, 1);
+  if (process.platform !== 'win32') assert.equal((await stat(receiptPath)).mode & 0o777, 0o600);
+});
+
+test('receipt retains errors and uncertain stops; existing destinations prevent execution', async t => {
+  const path = await file(t);
+  for (const mode of ['transport', 'uncertain', 'invalid-input']) {
+    const receiptPath = join(path, '..', mode + '.json');
+    const mock = fake(() => {
+      if (mode === 'transport') throw new Error('PRIVATE_TRANSPORT_ERROR');
+      return text({ status: 'stopped', actions: 1, completedSteps: 0, uncertainAction: true, reason: 'PRIVATE_REASON' });
+    });
+    if (mode === 'invalid-input') await writeFile(path, 'PRIVATE_INVALID_CONTENT');
+    const options = parseTaskArgs(['run-steps', '--app', '123', '--file', path, '--receipt', receiptPath]);
+    if (mode === 'uncertain') assert.equal((await runTask(options, mock)).exitCode, 2);
+    else await assert.rejects(runTask(options, mock));
+    const saved = await readFile(receiptPath, 'utf8'), receipt = finalReceipt(saved);
+    assert.equal(receipt.status, mode === 'uncertain' ? 'stopped_or_error' : 'error');
+    assert.equal(receipt.toolCallAttempts, mode === 'invalid-input' ? 0 : 1);
+    assert.equal(receipt.toolResultsReceived, mode === 'uncertain' ? 1 : 0);
+    assert.doesNotMatch(saved, /PRIVATE_/);
+    if (mode === 'uncertain') assert.equal(receipt.workflow.uncertainAction, true);
+    const untouched = fake(() => { throw new Error('must not execute'); });
+    await assert.rejects(runTask(options, untouched), /no task was started/);
+    assert.equal(untouched.state.scopes.length, 0);
+    assert.equal(await readFile(receiptPath, 'utf8'), saved);
+  }
+});
+
+test('invalid or misplaced inspection budgets are rejected before any connection', () => {
+  for (const [flag, values] of [['--max-controls', ['0', '129', '-1', '1.5', '1e2', 'NaN']], ['--max-text-chars', ['16001', '-1', '0.5', 'Infinity']]]) {
+    for (const value of values) assert.throws(() => parseTaskArgs(['inspect', '--app', '123', flag, value]));
+  }
+  for (const args of [
+    ['list-apps', '--max-controls', '128'],
+    ['run-steps', '--app', '123', '--file', 'task.json', '--max-text-chars', '0'],
+    ['inspect', '--app', '123', '--max-controls', '64', '--max-controls', '128'],
+    ['inspect', '--app', '123', '--max-text-chars'],
+  ]) assert.throws(() => parseTaskArgs(args));
+});
+
+test('receipts retain cancellation and close failures without claiming task success', async t => {
+  const path = await file(t);
+  for (const mode of ['cancelled', 'close-failure']) {
+    const receiptPath = join(path, '..', mode + '.json');
+    let connections = 0;
+    const options = parseTaskArgs(['inspect', '--app', '123', '--receipt', receiptPath]);
+    await assert.rejects(runTask(options, {
+      signal: mode === 'cancelled' ? AbortSignal.abort() : undefined,
+      connect: async () => {
+        connections++;
+        return { client: { listTools: async () => ({ tools: [{ name: 'release_control' }] }), callTool: async () => text('PRIVATE_CONTENT') },
+          close: async () => { throw new Error('PRIVATE_CLOSE_FAILURE'); } };
+      },
+    }));
+    const saved = await readFile(receiptPath, 'utf8'), receipt = finalReceipt(saved);
+    assert.equal(receipt.status, 'error'); assert.equal(receipt.exitCode, 2);
+    assert.equal(receipt.toolCallAttempts, mode === 'cancelled' ? 0 : 1);
+    assert.equal(connections, mode === 'cancelled' ? 0 : 1);
+    assert.equal(receipt.returnedTextBytes, null); assert.equal(receipt.workflow, null);
+    assert.doesNotMatch(saved, /PRIVATE_/);
+  }
+});
+
+test('abrupt child exit retains pre-call intent without inventing dispatch or completion', async t => {
+  const path = await file(t);
+  for (const effect of [false, true]) {
+    const receiptPath = join(path, '..', `interrupted-${effect}.jsonl`), marker = receiptPath + '.effect';
+    const script = `
+      import {runTask} from ${JSON.stringify(new URL('./otto-task.mjs', import.meta.url).href)};
+      import {readFile,writeFile} from 'node:fs/promises';
+      await runTask({command:'run-steps',appId:'123',file:${JSON.stringify(path)},receipt:${JSON.stringify(receiptPath)}}, {
+        connect: async()=>({client:{listTools:async()=>({tools:[{name:'release_control'}]}),callTool:async()=>{
+          const rows=(await readFile(${JSON.stringify(receiptPath)},'utf8')).trim().split('\\n').map(JSON.parse);
+          if(rows.at(-1).phase!=='intent'||rows.at(-1).toolCallAttempts!==0)process.exit(19);
+          if(${effect})await writeFile(${JSON.stringify(marker)},'simulated effect');
+          process.exit(17);
+        }},close:async()=>{}})
+      });`;
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', script], { timeout: 10000, encoding: 'utf8' });
+    assert.equal(child.status, 17, child.stderr);
+    const rows = (await readFile(receiptPath, 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.deepEqual(rows.map(row => row.phase), ['started', 'intent']);
+    const pending = rows.at(-1);
+    assert.equal(pending.status, 'incomplete'); assert.equal(pending.workflow, null);
+    assert.deepEqual(pending.pendingOperation, { kind: 'tool_call', name: 'run_steps', ordinal: 1 });
+    assert.equal(pending.toolResultsReceived, 0);
+    if (effect) assert.equal(await readFile(marker, 'utf8'), 'simulated effect');
+    else await assert.rejects(stat(marker), { code: 'ENOENT' });
+  }
+});
+
+test('cancellation after checkpoint preparation prevents the tool call and cancelled discovery never starts', async t => {
+  const path = await file(t), controller = new AbortController();
+  let calls = 0;
+  const receiptPath = join(path, '..', 'cancel-intent.jsonl');
+  await assert.rejects(runTask({ command: 'inspect', appId: '123', receipt: receiptPath }, {
+    signal: controller.signal,
+    connect: async () => ({ client: {
+      listTools: async () => { controller.abort(); return { tools: [{ name: 'release_control' }] }; },
+      callTool: async () => { calls++; return text('not allowed'); },
+    }, close: async () => {} }),
+  }));
+  assert.equal(calls, 0);
+  const saved = finalReceipt(await readFile(receiptPath, 'utf8'));
+  assert.equal(saved.toolCallAttempts, 0); assert.equal(saved.status, 'error');
+  await assert.rejects(runTask({ command: 'list-apps' }, {
+    signal: AbortSignal.abort(), discover: async () => { calls++; return { apps: [] }; },
+  }));
+  assert.equal(calls, 0);
+});
+
+test('receipt sync failures prevent initial execution or preserve uncertainty after a returned call', async t => {
+  const path = await file(t);
+  const probe = await open(path, 'r'), prototype = Object.getPrototypeOf(probe);
+  await probe.close();
+  const original = prototype.sync;
+  for (const failAt of [1, 3]) {
+    let syncs = 0;
+    const mocked = t.mock.method(prototype, 'sync', async function () {
+      if (++syncs === failAt) throw new Error('PRIVATE_DISK_ERROR');
+      return original.call(this);
+    });
+    const receiptPath = join(path, '..', `sync-failure-${failAt}.jsonl`);
+    const mock = fake(() => text({ status: 'verified', actions: 1, completedSteps: 1 }));
+    try {
+      await assert.rejects(runTask({ command: 'run-steps', appId: '123', file: path, receipt: receiptPath }, mock), /may have run/);
+      assert.equal(mock.state.calls.length, failAt === 1 ? 0 : 1);
+      assert.equal(mock.state.closes, failAt === 1 ? 0 : 1);
+      const saved = await readFile(receiptPath, 'utf8');
+      assert.doesNotMatch(saved, /PRIVATE_DISK_ERROR/);
+      assert.ok(saved.trim().split('\n').map(JSON.parse).every(row => row.phase !== 'final'));
+    } finally { mocked.mock.restore(); }
+  }
+});
+
 test('workflow accepts literal steps and rejects scope, credentials, extra fields, and size excess', () => {
   assert.deepEqual(validateTaskFile(task), task);
   assert.equal(validateTaskFile({ steps: [{ operation: 'key', value: 'enter' }] }).steps[0].value, 'enter');
@@ -61,6 +232,47 @@ test('file reader is byte bounded, regular-file only, and never echoes invalid c
   if (process.platform !== 'win32') {
     const link = path + '.link'; await symlink(path, link);
     await assert.rejects(readTaskFile(link));
+  }
+});
+
+test('filled_values preserves long and Unicode literals through exact scoped dispatch', async t => {
+  const workflow = { steps: [
+    { operation: 'fill', label: ' Résumé ', value: 'é🙂'.repeat(500) },
+    { operation: 'fill', label: '都市', value: '東京' },
+    { operation: 'fill', label: 'Notes', value: '' },
+  ], expected: 'filled_values' };
+  const path = await file(t, workflow);
+  const connection = fake(request => request.name === 'list_apps'
+    ? text({ apps: [{ id: '4321', name: 'Exact App' }] }) : text({ status: 'verified' }));
+  const result = await runTask({ command: 'run-steps', appName: 'Exact App', file: path }, connection);
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(connection.state.calls, [
+    { name: 'list_apps', arguments: {} },
+    { name: 'run_steps', arguments: { appId: '4321', ...workflow } },
+  ]);
+  assert.equal(connection.state.scopes[0].appName, 'Exact App');
+  assert.equal(connection.state.closes, 1);
+});
+
+test('invalid filled_values workflows and unknown strings fail before connecting', async t => {
+  const fill = (label, value = 'Ada') => ({ operation: 'fill', label, value });
+  for (const workflow of [
+    { steps: [fill('Name'), { operation: 'press', label: 'Save' }], expected: 'filled_values' },
+    { steps: [fill('Name'), { operation: 'key', value: 'tab' }], expected: 'filled_values' },
+    { steps: [fill('Name'), fill(' Name ')], expected: 'filled_values' },
+    { steps: [fill('Café'), fill('Cafe\u0301')], expected: 'filled_values' },
+    { steps: [fill('Password')], expected: 'filled_values' },
+    { steps: [fill('Name', 'sk-abcdefghijklmnop123456789')], expected: 'filled_values' },
+    { steps: [fill('Name', 'x'.repeat(2001))], expected: 'filled_values' },
+    { steps: Array.from({ length: 9 }, (_, i) => fill(`Field ${i}`, 'x'.repeat(2000))), expected: 'filled_values' },
+    { steps: Array.from({ length: 17 }, (_, i) => fill(`Field ${i}`)), expected: 'filled_values' },
+    { ...task, expected: 'filled_value' },
+  ]) {
+    const path = await file(t, workflow);
+    const connection = fake(() => { throw new Error('Must not connect'); });
+    await assert.rejects(runTask({ command: 'run-steps', appId: '123', file: path }, connection), error => error.exitCode === 1);
+    assert.equal(connection.state.scopes.length, 0);
+    assert.equal(connection.state.calls.length, 0);
   }
 });
 

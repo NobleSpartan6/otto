@@ -14,7 +14,7 @@ export interface ExpectedState { values?: Record<string, string>; textIncludes?:
 export interface WorkflowInput {
   appId: string;
   steps: WorkflowStep[];
-  expected?: ExpectedState;
+  expected?: ExpectedState | "filled_values";
 }
 export interface DelegateInput {
   appId: string;
@@ -22,6 +22,13 @@ export interface DelegateInput {
   allowedActions: WorkflowStep[];
   expected: ExpectedState;
   maxSteps?: number;
+}
+export interface TargetResolutionIssue {
+  code: "target_missing" | "target_ambiguous" | "incomplete_observation";
+  matchCount: number | null;
+  controlsOmitted: number;
+  truncatedIdentity: boolean;
+  controlCoverage: CompactObservation["controlCoverage"];
 }
 export interface WorkflowReceipt {
   status: "verified" | "completed" | "stopped";
@@ -31,6 +38,8 @@ export interface WorkflowReceipt {
   modelCalls: number;
   elapsedMs: number;
   reason?: string;
+  /** Categories/counts only; no additional app content or implicit retry. */
+  targetResolution?: TargetResolutionIssue;
   /** A dispatch may have taken effect before an error. Never replay automatically. */
   uncertainAction?: boolean;
   usage?: { inputTokens: number | null; outputTokens: number | null; unknownUsageRequests: number; requestLatencyMs: number };
@@ -41,7 +50,9 @@ const literal = (value: unknown, max: number): value is string => typeof value =
 const normalize = (value: string) => value.trim().normalize("NFC");
 const KEYS = new Set(["enter", "escape", "tab"]);
 const OPS = new Set(["press", "fill", "scrollUp", "scrollDown", "key"]);
-export class WorkflowError extends Error {}
+export class WorkflowError extends Error {
+  constructor(message: string, readonly targetResolution?: TargetResolutionIssue) { super(message); }
+}
 
 function validateSteps(value: unknown): asserts value is WorkflowStep[] {
   if (!Array.isArray(value) || !value.length || value.length > 16) throw new WorkflowError("Supply 1–16 explicit actions.");
@@ -78,18 +89,27 @@ function validateExpected(value: unknown, required: boolean): asserts value is E
 export function validateWorkflow(value: unknown, delegated = false): asserts value is WorkflowInput | DelegateInput {
   if (!plain(value) || Object.keys(value).some(key => !(delegated ? ["appId", "goal", "allowedActions", "expected", "maxSteps"] : ["appId", "steps", "expected"]).includes(key)) ||
       !literal(value.appId, 256) || !value.appId.trim()) throw new WorkflowError("Invalid task input or app scope.");
-  validateSteps(delegated ? value.allowedActions : value.steps);
-  validateExpected(value.expected, delegated);
+  const steps = delegated ? value.allowedActions : value.steps;
+  validateSteps(steps);
+  if (!delegated && value.expected === "filled_values") {
+    if (steps.some(step => step.operation !== "fill") || new Set(steps.map(step => normalize(step.label!))).size !== steps.length)
+      throw new WorkflowError('"filled_values" requires only fill steps with distinct normalized labels.');
+  } else validateExpected(value.expected, delegated);
   if (delegated && (!literal(value.goal, 2000) || !value.goal.trim() || (value.maxSteps !== undefined && (!Number.isInteger(value.maxSteps) || Number(value.maxSteps) < 1 || Number(value.maxSteps) > 16))))
     throw new WorkflowError("Supply a goal and a step budget between 1 and 16.");
 }
 function unique(observation: CompactObservation, label: string, role?: string): CompactControl {
   // An omitted or truncated control could be a second match. Abstain instead of
   // silently interpreting a shortened observation as the complete application.
-  if (observation.truncation.controlsOmitted || observation.truncation.details.some(row => row.fields.includes("label") || row.fields.includes("role")))
-    throw new WorkflowError("The control list is incomplete. Use inspect and explicit refs instead of a label workflow.");
+  const controlCoverage = observation.controlCoverage === "complete" || observation.controlCoverage === "partial" ? observation.controlCoverage : "unknown";
+  const controlsOmitted = observation.truncation.controlsOmitted;
+  const truncatedIdentity = observation.truncation.details.some(row => row.fields.includes("label") || row.fields.includes("role"));
+  if (controlCoverage !== "complete" || controlsOmitted || truncatedIdentity)
+    throw new WorkflowError("Native coverage is incomplete or unknown, or control details were truncated. Use inspect and explicit refs instead of a label workflow.",
+      { code: "incomplete_observation", matchCount: null, controlsOmitted, truncatedIdentity, controlCoverage });
   const matches = observation.controls.filter(control => control.source === "accessibility" && normalize(control.label) === normalize(label) && (!role || control.role === role));
-  if (matches.length !== 1) throw new WorkflowError("An action or completion label is missing or ambiguous. Inspect and revise the task.");
+  if (matches.length !== 1) throw new WorkflowError("An action or completion label is missing or ambiguous. Inspect and revise the task.",
+    { code: matches.length ? "target_ambiguous" : "target_missing", matchCount: matches.length, controlsOmitted: 0, truncatedIdentity: false, controlCoverage });
   return matches[0]!;
 }
 function action(observation: CompactObservation, step: WorkflowStep): AgentActionInput {
@@ -121,6 +141,11 @@ function errorReason(error: unknown): string {
 /** Local bounded execution. The host supplies authority and exact literals; no model is invoked. */
 export async function runSteps(session: AgentSession, input: WorkflowInput, signal?: AbortSignal): Promise<WorkflowReceipt> {
   validateWorkflow(input);
+  // Keep the dispatched literals and their derived checks fixed across awaits.
+  input = structuredClone(input);
+  const expected = input.expected === "filled_values"
+    ? { values: Object.fromEntries(input.steps.map(step => [step.label!, step.value!])) }
+    : input.expected;
   const started = performance.now();
   const beforeDispatch = session.dispatchCount;
   const receipt: WorkflowReceipt = { status: "stopped", actions: 0, completedSteps: 0, checks: [], modelCalls: 0, elapsedMs: 0 };
@@ -164,11 +189,12 @@ export async function runSteps(session: AgentSession, input: WorkflowInput, sign
     observation = await session.inspect(input.appId, { maxControls: 128, maxTextChars: 16000 });
     active(signal);
     if (guard) session.validateFields(guard, guardedValues);
-    receipt.checks = check(session, observation, input.expected);
-    receipt.status = input.expected ? (allMatch(receipt.checks) ? "verified" : "stopped") : "completed";
+    receipt.checks = check(session, observation, expected);
+    receipt.status = expected ? (allMatch(receipt.checks) ? "verified" : "stopped") : "completed";
     if (receipt.status === "stopped") receipt.reason = "Actions finished, but the requested final checks did not all match.";
   } catch (error) {
     receipt.reason = errorReason(error);
+    if (error instanceof WorkflowError && error.targetResolution) receipt.targetResolution = error.targetResolution;
     if (inFlight && session.dispatchCount > lastDispatchCount) receipt.uncertainAction = true;
     session.invalidate();
   } finally { receipt.actions = session.dispatchCount - beforeDispatch; receipt.elapsedMs = Math.round(performance.now() - started); }

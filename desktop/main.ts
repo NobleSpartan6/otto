@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
 import { PlatformDriver } from "./native-driver.js";
+import { AgentLease } from "./agent-lease.js";
 import { OttoEngine } from "../core/engine.js";
 import { BatchEngine } from "../core/batch.js";
 import { VoiceSession } from "./voice.js";
@@ -242,6 +243,7 @@ void app
     driver = new PlatformDriver(
       app.isPackaged ? process.resourcesPath : root,
       app.isPackaged,
+      new AgentLease(),
     );
     engine = new OttoEngine(driver);
     batchEngine = new BatchEngine(driver);

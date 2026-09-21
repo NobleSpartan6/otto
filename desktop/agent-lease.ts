@@ -6,7 +6,7 @@ import { join } from "node:path";
 export class AgentLeaseBusyError extends Error {
   readonly code = "desktop_busy";
   constructor() {
-    super("Another Otto MCP client owns desktop control. Wait, then retry Otto. Do not fall back to another computer-use executor while it is busy.");
+    super("Another Otto client owns desktop control. Wait, then retry Otto. Do not fall back to another computer-use executor while it is busy.");
     this.name = "AgentLeaseBusyError";
   }
 }
@@ -30,7 +30,7 @@ const ownerPid = (name: string) => {
   return Number.isSafeInteger(pid) && pid > 0 ? pid : undefined;
 };
 
-/** Coordinates Otto agent-server processes only, not Electron or other CUA tools. */
+/** Coordinates participating Otto clients, not humans or other CUA tools. */
 export class AgentLease {
   private readonly directory: string;
   private readonly lock: string;
@@ -97,6 +97,12 @@ export class AgentLease {
     }
     if (renameDenied) throw new AgentLeaseUnavailableError();
     throw new AgentLeaseBusyError();
+  }
+
+  /** Validate an existing grant without reacquiring a lost or released lease. */
+  assertOwned(): void {
+    if (!this.held) throw new AgentLeaseBusyError();
+    this.acquire();
   }
 
   /** Call only once native work has settled; active work has no stealable TTL. */

@@ -337,6 +337,7 @@ function Read-Snapshot([string]$AppId) {
   $queue.Enqueue($root)
   $timer = [System.Diagnostics.Stopwatch]::StartNew()
   $visited = 0
+  $partialCoverage = $false
   while ($queue.Count -gt 0 -and $visited -lt 1200 -and $controls.Count -lt 180 -and $timer.ElapsedMilliseconds -lt 8000) {
     $element = $queue.Dequeue()
     $visited++
@@ -348,9 +349,11 @@ function Read-Snapshot([string]$AppId) {
         $queue.Enqueue($child)
         $child = $walker.GetNextSibling($child)
       }
+      if ($null -ne $child) { $partialCoverage = $true }
       if ($current.IsOffscreen) { continue }
       $role = $current.ControlType.ProgrammaticName.Replace('ControlType.', '')
       $sensitive = $current.IsPassword -or ($current.Name + ' ' + $current.AutomationId) -match '(?i)(password|passcode|secret|api.?key|credit.?card|security.?code|cvv)'
+      if ($current.Name.Length -gt 500) { $partialCoverage = $true }
       $label = Limit-Text $current.Name 500
       $value = $null
       $valuePattern = $null
@@ -418,12 +421,14 @@ function Read-Snapshot([string]$AppId) {
         [void]$text.AppendLine(('{0}: {1}' -f $role, $label))
         if (-not $sensitive -and -not [string]::IsNullOrEmpty($value)) { [void]$text.AppendLine($value) }
       }
-    } catch [System.Windows.Automation.ElementNotAvailableException] { continue }
-    catch [System.InvalidOperationException] { continue }
+    } catch [System.Windows.Automation.ElementNotAvailableException] { $partialCoverage = $true; continue }
+    catch [System.InvalidOperationException] { $partialCoverage = $true; continue }
   }
   $timer.Stop()
+  if ($queue.Count -gt 0) { $partialCoverage = $true }
+  $coverage = if ($partialCoverage) { "partial" } else { "complete" }
   $script:ControlIdentities[$AppId] = @{ windowToken=$windowToken; elements=$nextControls }
-  $result = @{ snapshotId=$snapshotId; windowToken=$windowToken; app=$appRecord.app; title=[Otto.Native]::Title($window); text=(Limit-Text $text.ToString() 24000); controls=@($controls.ToArray()); capturedAt=[DateTime]::UtcNow.ToString('o') }
+  $result = @{ controlCoverage=$coverage; snapshotId=$snapshotId; windowToken=$windowToken; app=$appRecord.app; title=[Otto.Native]::Title($window); text=(Limit-Text $text.ToString() 24000); controls=@($controls.ToArray()); capturedAt=[DateTime]::UtcNow.ToString('o') }
   # PrintWindow captures only this selected window. No full-screen fallback that could expose unrelated apps.
   $sensitiveBounds = @($controls | Where-Object { $_.sensitive -and $_.ContainsKey('bounds') } | ForEach-Object { $_.bounds })
   $result.protectedBounds = $sensitiveBounds

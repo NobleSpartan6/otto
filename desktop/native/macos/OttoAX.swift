@@ -172,14 +172,29 @@ final class OttoAX {
         snapshotBounds = bounds(window)
         var controls: [[String: Any]] = []
         var text: [String] = []
-        var visited = Set<CFHashCode>()
+        var visited: [CFHashCode: [AXUIElement]] = [:]
         var count = 0
+        var partialCoverage = false
+        func children(_ element: AXUIElement) -> [AXUIElement] {
+            var value: CFTypeRef?
+            let status = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value)
+            if status == .noValue || status == .attributeUnsupported { return [] }
+            guard status == .success, let result = value as? [AXUIElement] else {
+                partialCoverage = true
+                return []
+            }
+            return result
+        }
         func visit(_ element: AXUIElement, depth: Int) {
-            guard depth < 18, count < 1200, controls.count < 180 else { return }
+            guard depth < 18, count < 1200, controls.count < 180 else { partialCoverage = true; return }
             let hash = CFHash(element)
-            guard visited.insert(hash).inserted else { return }
+            for previous in visited[hash] ?? [] {
+                if CFEqual(previous, element) { return }
+            }
+            visited[hash, default: []].append(element)
             count += 1
             let role = string(element, kAXRoleAttribute)
+            if role.isEmpty { partialCoverage = true }
             // Closed menu trees can expose off-screen items and recent-document
             // labels. Only collect menu controls that are currently visible.
             if ["AXMenu", "AXMenuItem", "AXMenuBarItem"].contains(role) {
@@ -207,20 +222,23 @@ final class OttoAX {
                 if let b = bounds(element) { control["bounds"] = b }
                 controls.append(control)
             }
-            if let children = attribute(element, kAXChildrenAttribute) as? [AXUIElement] {
-                for child in children { visit(child, depth: depth + 1) }
-            }
+            for child in children(element) { visit(child, depth: depth + 1) }
         }
         visit(window, depth: 0)
         // The first standard menu is the global Apple menu, not selected-app
         // context. Never visit it or its system-wide recent-items descendants.
         let appRoot = AXUIElementCreateApplication(selected.processIdentifier)
-        if let menu = attribute(appRoot, kAXMenuBarAttribute), CFGetTypeID(menu) == AXUIElementGetTypeID(),
-           let items = attribute(menu as! AXUIElement, kAXChildrenAttribute) as? [AXUIElement] {
-            for item in items.dropFirst() { visit(item, depth: 0) }
+        var menu: CFTypeRef?
+        let menuStatus = AXUIElementCopyAttributeValue(appRoot, kAXMenuBarAttribute as CFString, &menu)
+        if menuStatus == .success {
+            if let menu = menu, CFGetTypeID(menu) == AXUIElementGetTypeID() {
+                for item in children(menu as! AXUIElement).dropFirst() { visit(item, depth: 0) }
+            } else { partialCoverage = true }
+        } else if menuStatus != .noValue && menuStatus != .attributeUnsupported {
+            partialCoverage = true
         }
         controlIdentities[id] = (windowToken: windowToken, elements: nextControls)
-        var result: [String: Any] = ["snapshotId": snapshotId, "windowToken": windowToken, "app": appInfo(selected), "title": string(window, kAXTitleAttribute),
+        var result: [String: Any] = ["controlCoverage": partialCoverage ? "partial" : "complete", "snapshotId": snapshotId, "windowToken": windowToken, "app": appInfo(selected), "title": string(window, kAXTitleAttribute),
             "text": String(text.joined(separator: "\n").prefix(16000)), "controls": controls,
             "capturedAt": ISO8601DateFormatter().string(from: snapshotTime)]
         if let documentIdentity = documentIdentities[id] { result["documentToken"] = documentIdentity.token }

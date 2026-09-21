@@ -114,6 +114,7 @@ export class AgentSession {
         new Set(entries.map(([label]) => labelKey(label))).size !== entries.length)
       throw new AgentSessionError("invalid_input", "Supply one to sixteen unique native field labels and values of at most 2,000 characters.");
     return entries.map(([label, expected]) => {
+      if (frame.snapshot.controlCoverage !== "complete") return { label, matched: false };
       const matches = frame.snapshot.controls.filter(control => nativeField(control) && labelKey(control.label) === labelKey(label));
       if (matches.length !== 1) return { label, matched: false };
       const control = matches[0]!;
