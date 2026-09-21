@@ -1,6 +1,6 @@
 # Otto: general computer-use architecture research
 
-Read-only review, 2026-09-19 UTC. Official repositories cloned outside Otto; no credentials or private applications accessed. Findings describe inspected source and authors’ reports, not independent benchmark reproduction. Otto inspected at `1ba20cdb026c92d7fbef343a874c9d3ad1e9eb52`; concurrent changes to `core/typesafe.ts` and `shared/types.ts` were excluded.
+Source comparison, 2026-09-19 UTC. Findings describe inspected source and authors’ reports, not independent benchmark reproduction. Otto was inspected at `1ba20cdb026c92d7fbef343a874c9d3ad1e9eb52`; descriptions of its implementation below refer to that revision.
 
 **Recommendation:** first remove the action/observation ceiling, then benchmark a Jev-controlled observation and reasoning budget against the same general controller without Jev. “Jev + computer use,” hybrid DOM/vision, and verified actions already have close prior art. A defensible contribution would be equal-or-better task success at demonstrably lower total cost, latency, and user intervention—not a novel combination claim.
 
@@ -36,7 +36,7 @@ Agent TARS is the broader tool harness: its [hybrid browser strategy](https://gi
 
 [Kortix agent-computer-use](https://github.com/kortix-ai/agent-computer-use/tree/9c58747c1cac78adcc33e606f1244c995dedacd8) supplies a native AX/UIA/AT-SPI CLI with Electron CDP. Its “zero per-action cost” refers to local tool execution, not the agent’s reasoning, tokens, or failures. README labels platform support preview. These two sources received a bounded README review, not a full implementation audit.
 
-## Otto’s current ceiling
+## Otto’s ceiling at the inspected revision
 
 - [`core/candidates.ts:16–188`](https://github.com/NobleSpartan6/otto/blob/1ba20cdb026c92d7fbef343a874c9d3ad1e9eb52/core/candidates.ts#L16-L188): at most 64 lexically ranked candidates; press, exposed fill/vertical-scroll, existing-app activation, Enter/Escape/Tab, finish/blocked. No general hover, drag, right-click, hotkey chord, file/dialog/browser primitive, or model-grounded visual target.
 - [`core/planner.ts:248–367`](https://github.com/NobleSpartan6/otto/blob/1ba20cdb026c92d7fbef343a874c9d3ad1e9eb52/core/planner.ts#L248-L367): optional screenshot helps choose an existing candidate only; it cannot introduce a missing target/action. History is the last 20 action/change entries, not a durable task/evidence memory. Stronger vision alone cannot solve this ceiling.

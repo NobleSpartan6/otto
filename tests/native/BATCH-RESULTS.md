@@ -27,7 +27,7 @@ node scripts/build-native.mjs
 node --import tsx tests/native/batch-smoke.ts
 ```
 
-The harness copies the helper into a private temporary resource directory before testing, so concurrent builds cannot change its executable mid-run. The JSON report and per-case evidence are written under `output/native-batch/<timestamp>/`. Those local artifacts are ignored by Git and contain no screenshots or provider keys.
+The harness copies the helper into a private temporary resource directory before testing, so concurrent builds cannot change its executable mid-run. JSON reports and per-case evidence are kept in local, ignored output and contain no screenshots or provider keys.
 
 Recorded revisions for the passing run:
 
@@ -40,9 +40,9 @@ Recorded revisions for the passing run:
 
 ## Failures retained
 
-The final report is `output/native-batch/2026-09-19T03-24-35-306Z/report.json`. Two earlier full runs remain alongside it:
+Two earlier full runs remain separate from the passing result:
 
-- `2026-09-19T03-19-23-920Z`: all seven cases failed before approval because unrelated hidden menu controls had zero-sized bounds. The implementation now scopes its form fingerprint to editable native fields, requires valid geometry for every requested target, and excludes the shared Apple menu subtree.
-- `2026-09-19T03-23-37-293Z`: all seven cases failed because the fixture's overridden accessibility setter did not update the real text control. Native readback and the independent oracle caught the mismatch. The fixture setter was corrected; failures were not discarded.
+- In the first run, all seven cases failed before approval because unrelated hidden menu controls had zero-sized bounds. The implementation scopes its form fingerprint to editable native fields, requires valid geometry for every requested target, and excludes the shared Apple menu subtree.
+- In the second run, all seven cases failed because the fixture's overridden accessibility setter did not update the real text control. Native readback and the independent oracle caught the mismatch. The fixture setter was corrected; failures were not discarded.
 
 No live Jev baseline was run by this suite. No provider billing, comparative latency, arbitrary-app compatibility, Windows batch result, or reliability rate beyond these seven cases is established. See the [developer evaluation](../../docs/evaluation-developer.md) for the separate offline context measurements.

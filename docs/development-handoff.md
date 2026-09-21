@@ -1,44 +1,52 @@
-# Agent improvements branch
+# Development guide
 
-Branch: `codex/otto-agent-improvements`.
+Read [the repository working rules](../AGENTS.md) before making changes. This guide describes the code boundaries and validation requirements for contributors; it does not grant publication or runtime permissions.
 
-<!-- Frequent commits are required: commit each coherent, verified slice and include validation in its commit comment/body. -->
+## Source map
 
-## Current base
+| Area | Implementation | Contract |
+| --- | --- | --- |
+| Executable agent bridge | `desktop/agent-server.ts`, `core/agent-session.ts`, `core/agent-workflow.ts` | Launcher-scoped inspection, single native actions, bounded exact workflows, optional Jev delegation, and control release. |
+| Read-only developer server | `desktop/developer-server.ts`, `core/developer.ts` | Compact observations and inert literal fill preparation; no execution or approval bridge. |
+| Electron workflows | `core/engine.ts`, `core/batch.ts`, `desktop/main.ts` | Guided tasks with per-action review and a separate immutable reviewed-fill workflow. |
+| Native control | `desktop/native-driver.ts`, `desktop/native/`, `desktop/agent-lease.ts` | Native identity, freshness, cancellation, and cooperative desktop ownership. |
+| Provider integration | `core/typesafe.ts`, `core/planner.ts` | Validated structured decisions and an optional planner; provider outputs do not authorize effects or certify completion. |
+| Evaluation | `evals/`, `tests/native/`, `scripts/otto-task.mjs` | Separate automated fixtures, native integration checks, host-model usage, and opt-in local receipts. |
 
-- MCP/CLI exact-fill verification, bounded inspection controls, native coverage diagnostics and interruption-safe opt-in JSONL receipts.
-- Cooperative desktop ownership shared by current Electron source and MCP clients. Older installed apps do not acquire the new lease.
-- Native `controlCoverage` separates partial acquisition from serialization truncation. Label workflows stop on partial/unknown coverage; fresh explicit refs remain available.
-- Offline evaluation and optional native/host evaluation infrastructure. Their presence does not establish performance targets; do not launch a synthetic pilot by default.
-- Isolated Locked Cut example: `examples/locked-cut/README.md`. Fixture playback/import/locks/export are verified; live Jev inference and real-footage creative quality remain unverified. Hosted Jev is not labeled an open-source model.
+See the [agent bridge](agent-bridge.md), [read-only tools](developer-tools.md), [current-task CLI](current-task-usage.md), [scoped discovery](scoped-discovery.md), and [reviewed fills](verified-fills.md) for interface details.
 
-## Next useful changes
+## Preserve execution contracts
 
-1. Review native coverage and ownership handling, especially runtime edge cases. Preserve conservative stops.
-2. Add scoped native target discovery before response truncation, with complete matching coverage required for uniqueness.
-3. Add bounded, read-only settling for explicit postconditions without repeating actions.
-4. Improve compact stop handoffs, preserving unknown effects and fresh-inspection requirements.
-5. Validate naturally occurring authorized workflows. Separate runtime evidence from tests and provider usage from serialized byte counts.
+Keep exact application scope, process/window/document identity, single-use references, expected values, cancellation, and uncertain-effect stops. Do not automatically repeat an action whose effect is unknown.
 
-For Locked Cut, first validate actual typed Jev decisions using supplied metadata and a locally configured key. Keep the prototype separate; do not grow it into a second editor or add an unverified open-model backend.
+Native acquisition coverage and compact-response truncation are different. Query filtering of acquired controls does not expand native traversal or prove a complete tree. Label-based workflows require sufficient coverage to establish uniqueness; explicit-reference operations retain their own freshness and identity checks. Keep safety behavior consistent across entrypoints without assuming their authorization policies are interchangeable.
 
-## Frequent commit protocol
+The desktop lease coordinates participating Otto implementations. It is not a system-wide lock against people, other automation tools, or older builds. Native focus and identity checks remain necessary.
 
-Make frequent commits: one coherent change plus its regression coverage, after the relevant checks pass. A commit body/comment should state:
+## Validation
 
+For core changes, run:
+
+```sh
+npm run typecheck
+npm test
 ```
-Change: <observable behavior and why>
-Validation: <commands and actual results>
-Limits: <runtime or platform checks not performed>
-Next: <next bounded slice, if relevant>
+
+For the isolated Locked Cut example, run:
+
+```sh
+npm run test:locked-cut
+npx tsc -p examples/locked-cut/tsconfig.json
 ```
 
-Commit only the files for that slice. Re-read branch HEAD before a remote write. Return the actual commit SHA after success; a proposed patch or attempted tool call is not a commit. Do not amend someone else's commit or force-push over concurrent work.
+Read [the example's own documentation](../examples/locked-cut/README.md) before modifying it. Fixture behavior does not establish live provider behavior or creative quality. Hosted Jev is an external service, not an open-source model included with Otto.
 
-## ChatGPT handoff
+For documentation-only changes, check affected relative links, section anchors, commands, interface names, and evidence labels. Do not claim checks that were not run. Native and host-model evaluations can control the desktop or consume provider usage; they are not routine unit tests and require explicit runtime authorization and an appropriate environment. Report macOS, Windows, browser, fixture, and provider evidence separately.
 
-Use the exact branch when reading repository files. First inspect the installed GitHub integration's actual tool capabilities. The standard ChatGPT GitHub app is documented as read-only; branch creation does not grant write access. If write tools are unavailable, return small patches for Codex to apply and commit. Do not claim a commit was created without a confirmed SHA.
+## Change review
 
-Reference: https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
+Use the [contribution review workflow](improvement-loop.md). Keep each change coherent, preserve unrelated work, and use conflict-protected updates on the intended feature branch. A patch, local checkpoint, or attempted API call is not evidence of a published commit. Record the resulting SHA and the validation performed on that revision.
 
-Publication is separate from local branch preparation. Do not push, open a PR, merge or deploy based solely on these instructions; follow the user's current authorization.
+For contributors using ChatGPT's GitHub integration, see the [official integration documentation](https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt). Check the connected tool's actual supported operations and permissions before attempting a write.
+
+Public changes should contain standalone code, contracts, reproducible methods, and necessary source provenance. Exclude credentials, application contents, private recordings, raw operational logs, and unrelated personal material. Evaluation results must retain failures and unknown usage without exposing private data. Neither serialized byte counts nor tokenizer counts establish billed savings.

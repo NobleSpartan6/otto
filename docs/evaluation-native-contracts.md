@@ -21,7 +21,7 @@ On **2026-09-20 UTC**, all ten scheduled cases ran once on macOS arm64 with seed
 | Missing oracle evidence or unrun cases | 0 |
 | Model calls in this scripted suite | 0 |
 
-The [reviewed synthetic evidence](evidence/native-contracts-2026-09-20.json) includes original grades, before/after state, per-request checkpoints, receipts, and source/runtime hashes. Local temporary paths and process-launch metadata are omitted; the original report hash is retained. Raw local evidence remains under `output/native-contracts/2026-09-20T01-44-16-760Z/`.
+The [reviewed synthetic evidence](evidence/native-contracts-2026-09-20.json) includes original grades, before/after state, per-request checkpoints, receipts, and source/runtime hashes. Local temporary paths and process-launch metadata are omitted; the original report hash is retained.
 
 After execution, an independent code review found that the grader checked total write attempts but did not verify their per-field attribution. A forged record could therefore claim a write to an already-correct field while preserving totals. The corrected grader checks per-field attempts and rejections, including every checkpoint. Original evidence and judgments are preserved; replay explicitly reports whether the current grader hash differs. No new native attempt was made to replace the recorded results.
 
@@ -35,7 +35,7 @@ npm run eval:replay -- docs/evidence/native-contracts-2026-09-20.json
 
 Replay checks how recorded evidence grades under the current code; it does not authenticate the logs or create new execution evidence. A changed grader is disclosed separately from changed system behavior. The suite's launch handling also received a cleanup fix after this run: it captures validated ownership before writing logs and aborts further trials if startup ownership is uncertain. That failure-path fix is covered by input-validation tests; the ten-case recorded native run predates it.
 
-A separate post-change smoke run of `exact-standard-six` passed with six writes, no forbidden effects, and complete cleanup. All 14 preserved runtime inputs matched their hashes. Its local evidence is `output/native-contracts/2026-09-20T01-52-36-427Z/`; it is not pooled into the ten-case result above.
+A separate post-change smoke run of `exact-standard-six` passed with six writes, no forbidden effects, and complete cleanup. All 14 preserved runtime inputs matched their hashes. It is not pooled into the ten-case result above.
 
 | Family | What is tested | What the grader checks |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ The suite uses no model or provider API. `modelCalls: 0` describes this scripted
 1. Build the runtime with `npm run build`.
 2. Reserve desktop access; do not run another computer-use controller alongside the suite.
 3. Execute `npm run eval:native-contracts -- --run`.
-4. Read `output/native-contracts/<timestamp>/report.md` and its `report.json` evidence.
+4. Read the generated report and its JSON evidence in the harness's local output.
 
 Native Accessibility must already be available to the launch context. The suite never opens a permission prompt, reads provider keys, or changes the installed Otto app. Every server is scoped to its own fixture's exact PID. Otto's worker lease applies; contention returns a recorded failure rather than switching executors.
 
@@ -72,7 +72,7 @@ The default is one trial per case, ordered by a recorded deterministic seed. `--
 
 The denominator includes every scheduled trial. Interruptions leave remaining trials visible as `not_run`. All started failures retain their responses and available final state before cleanup. A post-dispatch error is never automatically replayed. Cleanup verifies the exact fixture process; an uncertain cleanup stops subsequent trials.
 
-The recorded plan freezes case definitions, seed, repetition count, and runtime hashes before execution. Future runs also copy those source/runtime inputs under the report's `runtime/` directory; the first recorded run captured hashes before this snapshot feature was added. Per-trial files include launch output, tool manifest, actual MCP requests/results, oracle states, grade, and failures. Changes to the runtime invalidate the run. Raw artifacts remain local under ignored `output/` because future fixtures may contain sensitive data; publish only reviewed synthetic evidence.
+The recorded plan freezes case definitions, seed, repetition count, and runtime hashes before execution. Future runs also copy those source/runtime inputs under the report's `runtime/` directory; the first recorded run captured hashes before this snapshot feature was added. Per-trial files include launch output, tool manifest, actual MCP requests/results, oracle states, grade, and failures. Changes to the runtime invalidate the run. Raw artifacts remain local because future fixtures may contain sensitive data; publish only reviewed synthetic evidence.
 
 ## Improve the evaluation
 

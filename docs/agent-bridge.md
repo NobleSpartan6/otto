@@ -4,7 +4,7 @@ The native agent bridge is separate from the older read-only [developer context 
 
 Share the [Otto for agents page](https://noblespartan6.github.io/otto/agents.html) for an overview and setup. For a task that is already running and cannot reload its MCP catalog, use the [current-task CLI adapter](current-task-usage.md). Both interfaces use the same scoped executor.
 
-The interaction takes inspiration from [AI Builder Club's Jev browser demonstration](https://x.com/aibuilderclub_/status/2101316543317684368): give an agent a task and move the intermediate action loop into a worker. The post was inspected in the signed-in browser on September 19, 2026. Its video shows website navigation; it does not establish its source implementation, token savings, or general desktop reliability. Otto's implementation here is independent and uses its existing native adapters.
+A public interaction reference is [AI Builder Club's Jev browser demonstration](https://x.com/aibuilderclub_/status/2101316543317684368), reviewed September 19, 2026. It shows website navigation with an intermediate worker loop, not evidence of its source implementation, token savings, or general desktop reliability. Otto's implementation is independent and uses its existing native adapters.
 
 ## Build and review setup
 
@@ -46,7 +46,7 @@ This emits `mcp_servers.otto.tools.act.approval_mode = "approve"` and the equiva
 
 | Tool | Current contract |
 | --- | --- |
-| `inspect` | Returns bounded text and control refs; defaults to 64 controls and 4,000 text characters. Explicit maxima are 128 controls and 16,000 text characters. Refs expire after 30 seconds. |
+| `inspect` | Returns bounded text and control refs; defaults to 64 controls and 4,000 text characters. Explicit maxima are 128 controls and 16,000 text characters. An optional exact label/role query filters acquired native controls before serialization; see [scoped discovery](scoped-discovery.md). Refs expire after 30 seconds. |
 | `act` | Uses the latest snapshot token and a control ref, except bounded `enter`, `escape`, or `tab` keys. A fill verifies its native value; press, scroll, and key report dispatch. |
 | `run_steps` | Runs 1–16 exact steps locally, with no model call. Native operations are `press`, `fill`, `scrollUp`, `scrollDown`, and `key`. Optional `expected.values` or `expected.textIncludes` checks determine verified completion. For distinct fill-only steps, `expected: "filled_values"` verifies every supplied literal without sending it twice; use explicit checks for additional fields or text. |
 | `delegate` | Jev chooses only from supplied `allowedActions` within one app. Exact `expected` checks are required. The default action budget is eight, with a maximum of 16. Supplied literals are used; no hidden planner generates text. |
@@ -98,4 +98,4 @@ Create the results directory first and set the same explicit model/reasoning con
 
 The documented `turn.completed` event includes `usage.input_tokens`, `cached_input_tokens`, `output_tokens`, and `reasoning_output_tokens`. Retain the raw fields and failed/interrupted turns; do not double-count cumulative updates or assume reasoning/cache fields are additive. App Server clients can record `thread/tokenUsage/updated` instead. [JSON event documentation](https://learn.chatgpt.com/docs/non-interactive-mode), [App Server events](https://learn.chatgpt.com/docs/app-server).
 
-Compare independently checked final state, first-attempt success, interventions, elapsed time, and all host plus Jev attempts together. Missing failed-call usage remains unknown. Provider counters measure reported usage, not necessarily a reconciled bill; Codex subscription percentages are not per-task dollar costs. Keep cold and repeated tasks separate. The [offline context benchmark](evaluation-developer.md) remains useful for exact serialized size, but cannot establish actual task savings. See the [broader evaluation plan](research/otto-direction.md).
+Compare independently checked final state, first-attempt success, interventions, elapsed time, and all host plus Jev attempts together. Missing failed-call usage remains unknown. Provider counters measure reported usage, not necessarily a reconciled bill; Codex subscription percentages are not per-task dollar costs. Keep cold and repeated tasks separate. The [offline context benchmark](evaluation-developer.md) remains useful for exact serialized size, but cannot establish actual task savings. See the [evaluation methodology](research/general-desktop-evaluation.md).

@@ -2,66 +2,81 @@
 
 ## Product
 
-Otto is an open-source macOS/Windows desktop CUA. It offers supervised model-driven tasks, reviewed exact form fills, and a read-only MCP interface for coding agents. The distribution website points to source and release artifacts; it does not remotely control a visitor's computer. A successful launch requires credible full-task demonstrations, reliable recovery, and measured completion quality. SOTA is a benchmark claim, not an implementation label.
+Otto is an open-source macOS/Windows desktop CUA with an Electron interface and local tools for coding agents. It offers supervised model-driven tasks, reviewed exact form fills, and an executable MCP bridge. The original read-only context/preparation server also remains available. The distribution website points to source and release artifacts; it does not remotely control a visitor's computer. General reliability and SOTA require comparable task evidence, not an implementation label.
 
-The design was reviewed with [GPT-6 Pro in the Otto project](https://chatgpt.com/g/g-p-6aab76ef83348191ba1a4f34ed604089-otto/c/6aab7709-8e24-83ea-acd3-ffb85c655d28). The final direction expands the [OCR/Jev reference](https://github.com/awlevin/typesafe-computer-use) with native accessibility, cross-app state, selective planning, explicit supervision, and testable outcomes.
+The [OCR/Jev reference](https://github.com/awlevin/typesafe-computer-use) is external architectural provenance. Otto's implementation adds native accessibility, scoped execution, separate verification, and explicit supervision; reference-project results are not Otto benchmarks.
 
 ## Architecture
 
-- **Electron main:** owns the task loop, provider keys, app allowlist, approvals, budgets, and native helper lifecycle. No public or localhost control server.
+- **Electron main:** owns the guided task loop, provider keys, app allowlist, approvals, budgets, and native helper lifecycle. No public or localhost control listener is exposed.
 - **Sandboxed renderer:** displays app selection, task composer, actual window image, decision trace, approval, Stop, and settings through a narrow context bridge.
-- **macOS helper:** Swift 6, AXUIElement, selected-window capture, native actions, process/window identity checks.
-- **Windows helper:** fixed bundled PowerShell/.NET UI Automation and User32 code; standard user access, no elevation or interpolated scripts.
-- **Local OCR:** bundled Tesseract/English model extracts text boxes from only the selected window. Accessibility controls win when they overlap a recognized text target.
-- **Jev:** chooses from a bounded, concrete candidate list using the documented TypeSafe API. It never supplies executable selectors or arbitrary arguments.
-- **Planner:** GPT-6 Astra through the official Responses API supplies subgoals and text drafts at initial planning, uncertainty, missing text, or recovery boundaries. Screenshot input requires separate consent.
-- **Reviewed fill engine:** applies a supplied literal field map after one immutable human review. It uses native identity checks and readback without provider calls, clicks, keyboard input, or submission actions.
-- **MCP stdio server:** exposes scoped compact observations and inert literal fill preparation. It has no execution or approval bridge into the desktop app.
-- **Native dictation:** explicitly started microphone sessions produce an editable task draft using supported on-device speech recognition. They never start tasks or grant action approval.
+- **macOS helper:** Swift, AXUIElement, selected-window capture, native actions, and process/window identity checks.
+- **Windows helper:** fixed bundled PowerShell/.NET UI Automation and User32 code; normal user access, no elevation or interpolated scripts.
+- **Local OCR:** bundled Tesseract/English data extracts text boxes from the selected window. Native controls are preferred when they overlap recognized text targets. OCR is not arbitrary visual grounding.
+- **Jev:** chooses from a bounded candidate list using the TypeSafe API. It cannot generate free text, interpret screenshots, or supply executable selectors or arbitrary action arguments.
+- **Planner:** an optional GPT-6 Astra Responses adapter proposes subgoals and text at planning, uncertainty, missing-text, or recovery boundaries. Its tools are disabled. Screenshot transmission requires separate consent.
+- **Reviewed fill engine:** applies supplied literal field values after an immutable human review, using native identity checks and readback without provider calls, clicks, keyboard input, or added submission actions.
+- **Executable MCP bridge:** `desktop/agent-server.ts` exposes scoped inspection, single actions, bounded workflows, optional Jev delegation, and control release over local stdio. It is read-only by default; `--allow-actions` enables host-authorized action tools.
+- **Read-only developer server:** `desktop/developer-server.ts` exposes compact observations and inert fill preparation. It has no execution or approval bridge into Electron.
+- **Native dictation:** explicitly started microphone sessions produce an editable task draft using supported on-device speech recognition. They cannot start tasks or grant action approval.
 
-In guided tasks, the stronger model is not invoked for every routine click. A cached subgoal guides successive Jev decisions, with hard call/action budgets. Jev-only mode removes planner dependency and uses literal user-provided text. Reviewed fills are a separate bounded workflow, not an autonomous setting for the guided agent.
+Guided tasks, Electron reviewed fills, and MCP workflows are separate entrypoints. They share native infrastructure, not interchangeable approval tokens. See [agent bridge setup](agent-bridge.md), [read-only tools](developer-tools.md), and [current-task CLI usage](current-task-usage.md).
 
 ## Observation and action contract
 
-The helper sends an opaque snapshot ID, selected process/window identity, capture timestamp, bounded accessible text, supported controls, and optional selected-window image. Each control has an opaque target ID, native role, readable label, allowed operations, and optional bounds. Stable helper-issued window and native control identity tokens support rebinding across fresh observations; a document token is included when available. Native handles never leave the helper. Missing identity tokens block reviewed fills.
+Native snapshots contain a selected process/window identity, capture timestamp, bounded accessible text, supported controls, and an optional selected-window image. Controls carry opaque snapshot-scoped target IDs, native roles, labels, operations, and optional bounds. Helper-issued window/control identities support rebinding; document identity is included when available. Native handles do not leave the helper.
 
-Candidates use explicit app IDs and snapshot-bound targets. Supported actions are native press, fill, scroll, activate, bounded keyboard input, completion request, and blocked. OCR candidates map in the trusted main process to observed positions; the planner cannot choose unconstrained coordinates. Future icon/canvas grounding must preserve this target validation boundary.
+The executable bridge's inspection defaults to 64 controls and 4,000 free-text characters, bounded at 128 and 16,000. It reports native acquisition coverage separately from serialization truncation. An optional exact label/role query filters already-acquired native controls before the response cap; it does not expand traversal or select another window/subtree. Partial or unknown acquisition cannot establish a total match count. See [scoped discovery](scoped-discovery.md).
+
+Agent-facing refs are single-use and expire after 30 seconds. Actions require a fresh native observation and identity checks before dispatch. The current bridge supports native press, fill, vertical scroll, and Enter/Escape/Tab. A fill checks exact native readback; press/key/scroll report dispatch only. General pointer/drag, arbitrary hotkeys, app launch, and a browser DOM adapter are not part of this bridge.
+
+The guided Electron loop additionally enumerates activation of allowed running apps and bounded OCR press targets. OCR coordinates are derived locally from observed regions; the planner cannot invent unrestricted coordinates. Canvas and icon-only interaction remain limited.
 
 ## Guided task loop
 
-1. Validate task consent, selected apps, provider configuration, and permissions.
-2. Observe the selected app; fuse native controls with OCR text targets.
-3. On a planning boundary, ask the planner for a schema-validated subgoal or draft.
-4. Construct and rank at most 64 concrete actions. Keep navigation and stopping options available.
-5. Ask Jev to choose; reject malformed output or unknown IDs.
-6. Present exact action approval. Approvals are single-use and expire with the observation.
-7. Revalidate the native target and dispatch once. Observe again; detect no progress and escalate or stop.
-8. Present the final evidence for human confirmation. A model's finish signal is not verified task success.
+1. Validate consent, selected apps, provider configuration, and permissions.
+2. Observe the selected app and combine native controls with local OCR targets when available.
+3. At a planning boundary, request a schema-validated subgoal or draft from the optional planner.
+4. Construct at most 64 concrete candidates, retaining navigation and stopping choices.
+5. Ask Jev to choose and reject malformed output or unknown candidate IDs.
+6. Present the exact action for single-use review.
+7. Revalidate the native target, dispatch once, and observe the result. Escalate or stop on insufficient progress.
+8. Present evidence for human confirmation. A model's finish signal is not independent task verification.
 
-One active task avoids conflicting cursor/focus owners. Stop cancels inference, revokes pending approval, invalidates the run generation, and terminates the helper. Provider timeouts and ambiguous OS errors do not trigger blind retries. The guided loop allows at most 20 Jev calls and five planner calls; a final model signal still requires human confirmation.
+The guided loop permits at most 20 Jev calls and five planner calls. Jev-only mode removes the planner dependency and uses supplied literal text; it is not offline inference. Stop revokes pending approval and future work and terminates the helper. It cannot undo an already-delivered native effect. Provider timeouts and ambiguous native failures do not trigger blind retries.
 
-## Reviewed exact fills
+## Executable MCP and CLI workflows
 
-The user supplies one app and a map of exact native field labels to literal values: at most 16 fields, 2,000 characters per value, and 16,000 characters total. Preparation reads the form without mutation. Every target must resolve uniquely to an enabled, non-sensitive native editable control with a readable current value and a stable identity. OCR targets cannot be filled. Any unresolved mapping blocks the entire preparation.
+The launcher selects one to four exact application IDs or names. Tools are `list_apps`, `inspect`, `act`, `run_steps`, `delegate`, and `release_control`; mutating tools require `--allow-actions`. The host remains responsible for task scope and any required consequential-action confirmation. Tool arguments cannot enable disabled capabilities.
 
-The immutable review contains current and proposed values and expires after two minutes. A single-use approval starts deterministic execution. Before the first write and each subsequent write, the engine obtains a fresh observation and checks the app/process, window, available document identity, native control identities, form shape, and all requested fields' expected values. Each write uses a fresh snapshot-bound target and is followed by exact native readback. An additional whole-batch readback is required before completion.
+`run_steps` executes 1–16 exact steps with zero model calls. All-fill workflows preflight every target, require complete native coverage, pin native identities and expected values, and recheck before each write. Optional final checks use full native values or supplied text conditions. `expected: "filled_values"` derives checks from distinct all-fill literals. No submit action, automatic rollback, or uncertain replay is added.
 
-No model request or submit action is issued. The target app may still autosave or produce other effects when a field changes. The receipt records attempted native actions, observations, and zero model calls; this excludes any upstream cost of generating the supplied values. A failure or Stop halts the remaining edits and records verified, uncertain, and unattempted fields without automatic retry or rollback. Completion proves the final requested native values, not persistence or external submission.
+`delegate` uses Jev only to select among caller-supplied, single-use allowed actions. It requires explicit expected-state checks and a configured TypeSafe key. There is no hidden generative planner in the MCP worker; model confidence cannot certify completion.
 
-Native identity does not prove every logical document state: some apps reuse controls or expose incomplete accessibility information. This workflow is for stable, visible forms, not universal transactional editing. See the [exact contract and user flow](verified-fills.md).
+The one-shot CLI uses this same bridge. Inspection refs expire when the connection closes; a later workflow reobserves and rebinds. Existing connections are not hot-patched when source changes.
 
-## Privacy and auth
+## Reviewed Electron fills
 
-BYOK keys live in main-process memory or optional OS-backed encrypted storage. Guided tasks send selected accessibility text to TypeSafe; hybrid observations go to OpenAI; screenshots require an additional opt-in. Reviewed fills make no provider calls. MCP observations and preparation values go to the host agent, which may send them to its provider. No inherited model secrets are passed to native helpers.
+Electron's separate fill workflow accepts one app and 1–16 exact field labels with literal values, at most 2,000 characters each and 16,000 total. Preparation resolves observed native editable fields, records current/proposed values and identity, and requires every mapping to resolve before review. OCR fields are not writable through this path.
 
-Guided-task exports omit raw app observations and screenshots, but goals and action labels may contain user data. Fill receipts contain reviewed and read-back values. Dictation audio remains in memory and is not saved; macOS requires on-device recognition support, and Windows uses installed System.Speech recognition. There is no cloud-recognition fallback. The transcript becomes editable draft text and follows normal task consent when the user starts a task.
+Review expires after two minutes. A consumed approval starts deterministic execution, with fresh app/process, window/document, control-identity, form-shape, and expected-value checks before writes. Each fill is read back; an additional final inspection checks the requested values. Failures retain partial outcomes without automatic retry or rollback.
 
-ChatGPT subscription sign-in is a separate future local integration using official managed authentication. A website OAuth button cannot turn subscription access into general API credits. No token extraction or shared credential relay is permitted.
+This path validates the returned native fields and their identity. Native readback does not by itself establish complete acquisition, and some applications reuse native controls across logical states. The workflow is not universal transactional editing. See the [reviewed fill contract](verified-fills.md).
 
-## Acceptance
+A successful result proves the requested observed values, not external persistence or submission. An application may autosave or trigger other effects when a field changes. Zero model calls describes execution inside Otto and excludes any host cost of generating the literals.
 
-Run the same held-out tasks with Otto Hybrid, Otto Jev-only, the reference prototype, and a strong vision-only baseline. Measure task completion, time to verified outcome, API spend per successful task, intervention count, unsafe actions, and recovery success. Compare complete workflows—not just one cheap model decision. Publish actual failure cases and platform coverage.
+## Ownership, privacy, and authentication
 
-Before broad distribution: broader platform/app runtime tests, trusted publisher signing and macOS notarization, provider-backed E2E runs, clean-machine permission onboarding, and benchmark results. macOS release packaging uses ad-hoc integrity signing with strict bundle verification; it does not establish a trusted publisher. See [observed validation](validation.md) for completed checks and remaining limits.
+The cooperative lease coordinates participating MCP clients and Electron builds containing shared ownership support. It is not a system-wide desktop lock: older builds, other CUA tools, and human input still require coordination and native identity/focus checks. Inspect/act sequences retain ownership for up to 30 idle seconds; workflows release it on completion. Cancellation and helper termination need their own runtime validation.
 
-The guided agent requires approval for every native action. Reviewed fills instead authorize an exact, bounded field set once and verify each write. Faster autonomous general navigation remains outside this policy.
+BYOK keys remain in main-process memory or optional OS-backed encrypted storage, never the renderer or native helper environment. Guided observations go to configured providers; screenshots require an additional opt-in. MCP text and returned literals go to the host agent and may enter its provider context. Reviewed fills make no provider calls.
+
+Guided exports omit raw observations and screenshots but can contain task text and action labels. Fill receipts contain reviewed/read-back values. The CLI's optional count-only JSONL receipt has a different privacy contract; see [CLI receipts](current-task-usage.md#optional-private-execution-receipt).
+
+Dictation audio is not saved by Otto. macOS requires on-device recognition support; Windows uses installed System.Speech recognition. There is no cloud fallback. ChatGPT subscription integration is separate and unimplemented; no credential extraction or shared relay is permitted. See [subscription connection](subscription-connection.md).
+
+## Acceptance and distribution
+
+Keep fixture results, provider-backed tasks, platform runtime checks, and independent outcomes separate. Compare complete workflows at matched tools, task scope, approvals, and budgets. Count failures and unknown usage. Byte counts and declared-tokenizer counts are not billed savings.
+
+Trusted publisher signing, clean-machine onboarding, broad application coverage, and general model-driven task quality require separate evidence. macOS ad-hoc signing verifies bundle integrity but is not Developer ID signing or notarization. See [validation](validation.md) and [evaluation methods](research/general-desktop-evaluation.md) for evidence boundaries.

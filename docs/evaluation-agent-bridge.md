@@ -19,7 +19,7 @@ The harness launches only disposable fixture applications and scopes each MCP se
 | Delegated | One `run_steps` call containing those same six fills and exact expected values | Same six values and writes; verified receipt agrees with fixture state |
 | Changed field | One `run_steps`; fixture changes Notes after the first write | Stop after one write, preserve changed Notes, leave remaining fields blank, no false verified receipt |
 
-The oracle is the fixture-owned `state.json`, read independently of MCP responses. Action acceptance alone is insufficient. Every attempt retains its full tool arguments/results, initial/final oracle, receipt, errors, stderr, and cleanup result under `output/agent-bridge/<timestamp>/`. The final report includes failed and blocked attempts. Fixture processes are terminated only after checking that each PID still belongs to the exact launched executable.
+The oracle is the fixture-owned `state.json`, read independently of MCP responses. Action acceptance alone is insufficient. Every attempt retains its full tool arguments/results, initial/final oracle, receipt, errors, stderr, and cleanup result in local, non-public output. The final report includes failed and blocked attempts. Fixture processes are terminated only after checking that each PID still belongs to the exact launched executable.
 
 ## Accounting boundary
 
@@ -37,7 +37,7 @@ This evaluation can support a narrow statement about equivalent six-field fixtur
 
 ## Recorded attempts
 
-The corrected third run passed all three cases on macOS arm64 / Node v26.8.1, September 20, 2026 UTC. Report: `output/agent-bridge/2026-09-20T00-15-53-517Z/report.json`; SHA-256: `4db0a987f2b736cbf5f2ab0c5c72c84f64a629f458df6ee3b00d17869ddb0e31`. Source and built-runtime hashes remained unchanged during execution. Every fixture child was cleaned up.
+The corrected third run passed all three cases on macOS arm64 / Node v26.8.1, September 20, 2026 UTC. Report SHA-256: `4db0a987f2b736cbf5f2ab0c5c72c84f64a629f458df6ee3b00d17869ddb0e31`. Source and built-runtime hashes remained unchanged during execution. Every fixture child was cleaned up.
 
 | Metric | Sequential baseline | `run_steps` |
 | --- | ---: | ---: |
@@ -54,6 +54,6 @@ The measured exchange payload was 95.5% smaller; counting the shared schemas/ins
 
 The changed-field case also passed: one native write, three observations, then a stopped receipt; the injected Notes edit remained intact and the other four unfilled fields stayed blank. It issued no submit or reset. One pair and one fault case establish this fixture behavior only, with no statistical reliability or speed claim.
 
-The first native run is retained at `output/agent-bridge/2026-09-20T00-09-12-940Z/report.json`. The baseline passed with seven host calls, 6,664 exchange tokens, and six independently recorded writes. Both delegated cases stopped before dispatch because each native field label also appeared as an OCR label, making the initial matching rule ambiguous. Both recorded zero writes; the fault injection therefore never ran. All three fixture processes were cleaned up and source hashes remained unchanged. The comparison is invalid for savings claims, and its report contains no successful-pair aggregate. A protocol regression covers this native/OCR overlap, corrected before the subsequent runs.
+In the first native run, the baseline passed with seven host calls, 6,664 exchange tokens, and six independently recorded writes. Both delegated cases stopped before dispatch because each native field label also appeared as an OCR label, making the initial matching rule ambiguous. Both recorded zero writes; the fault injection therefore never ran. All three fixture processes were cleaned up and source hashes remained unchanged. The comparison is invalid for savings claims, and its report contains no successful-pair aggregate. A protocol regression covers this native/OCR overlap, corrected before the subsequent runs.
 
-The second run is retained at `output/agent-bridge/2026-09-20T00-12-44-316Z/report.json`. The baseline and changed-field refusal passed. The ordinary delegated case wrote all six correct values, but its final inspection reconfigured the helper, resetting native identity tokens; the pinned-field check correctly refused those replacement tokens and the receipt stayed stopped. This attempt also has no successful-pair comparison. The fixture oracle confirms six writes for the ordinary case and one write for the fault case, with changed Notes preserved. All fixture children were cleaned up; source hashes remained unchanged. A separate protocol regression covers identity-preserving final inspection.
+In the second run, the baseline and changed-field refusal passed. The ordinary delegated case wrote all six correct values, but its final inspection reconfigured the helper, resetting native identity tokens; the pinned-field check correctly refused those replacement tokens and the receipt stayed stopped. This attempt also has no successful-pair comparison. The fixture oracle confirms six writes for the ordinary case and one write for the fault case, with changed Notes preserved. All fixture children were cleaned up; source hashes remained unchanged. A separate protocol regression covers identity-preserving final inspection.

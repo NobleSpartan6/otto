@@ -32,7 +32,7 @@ The prototype requires provider confidence ≥0.5 and a top-two probability marg
 
 Diffusion source downloads `index.tsx`. Put it in a new folder, then open that folder in Diffusion Studio. For imported clips, put the originals in that folder's `assets/` with their original simple filenames. The JSX defines a six-clip sequence, explicit source trims, a 1920×1080 scene and muted playback. The fixture export renders unmistakable test slates.
 
-The installed app's bundled documentation was checked: JSX folders are real projects, `open` loads one, source saves recompile, and `check`/`capture` verify it. A separate fixture project was opened and captured successfully; the prior MidiMix project was restored. No video export or edits to the MidiMix project were performed.
+A separate exported fixture project was opened and captured in Diffusion Studio. The structural checks below describe that fixture only; no video-export or real-footage quality result is established.
 
 ## Evidence and limits
 
@@ -41,9 +41,9 @@ The installed app's bundled documentation was checked: JSX folders are real proj
 - Missing key, all locks, low confidence and provider failure preserve the current cut. Media/export validation is tested.
 - Browser: fixture re-cut preserves a locked third shot; keyboard focus reaches Previous cut; 390px layout remains usable; missing-key path holds the cut. Eight tiny authored video test patterns imported and decoded at 160×90; playback and seeking were exercised. These test patterns are not user footage.
 - Diffusion structural check: 12 seconds, six groups, zero issues. Captures at 0/4/10 seconds show expected slate IDs 01/03/06.
-- **Live Jev inference, real owned-footage creative quality, open-model integration, savings and novelty are not established.** A session key and owned clips are the remaining demonstration inputs.
+- **Live Jev inference, real owned-footage creative quality, open-model integration, savings and novelty are not established.** A session key and owned clips are required for a live demonstration.
 
-Hosted Jev is TypeSafe's model, documented at https://docs.typesafe.ai/introduction. No specific open-model repo/license was identified in the supplied context, so no open-model backend was added. Do not call hosted Jev open source.
+Hosted Jev is TypeSafe's external model, documented at https://docs.typesafe.ai/introduction. No open-model backend is implemented. Otto's source license does not make hosted Jev open source.
 
 ## 40-second recording plan
 

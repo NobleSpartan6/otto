@@ -87,9 +87,9 @@ npm run benchmark:context # reproducible representation/tokenizer comparison
 
 `core/` contains provider adapters, candidate construction, the bounded task loop, and the reviewed fill engine. `desktop/` contains Electron IPC, local OCR, dictation, and native helpers. `shared/` owns the protocol types. `src/` is the desktop UI and distribution site.
 
-See the [technical spec](docs/technical-spec.md), [evaluation plan](docs/evaluation.md), and [reference architecture analysis](docs/reference-architecture.md). GPT-6 Pro was consulted on the architecture; its advice is evaluated against actual implementation and tests.
+See the [technical spec](docs/technical-spec.md), [evaluation plan](docs/evaluation.md), and [reference architecture analysis](docs/reference-architecture.md).
 
-The redesigned agent workspace follows an [assessment of Diffusion Studio's installed app and source, plus Cua](docs/design/agent-workspace.md). Task preparation, action review, and result verification stay distinct; routine activity is expandable.
+The agent workspace uses [public Diffusion Studio and Cua source references](docs/design/agent-workspace.md). Task preparation, action review, and result verification stay distinct; routine activity is expandable.
 
 ## For Codex and other coding agents
 

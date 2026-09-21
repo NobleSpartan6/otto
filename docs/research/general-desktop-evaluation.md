@@ -1,69 +1,68 @@
-# Otto general desktop evaluation — research and first 30 tasks
+# General desktop evaluation methodology
 
-Checked 2026-09-19 UTC. Read-only source review; no benchmark environment, model calls, paid cloud resources, or user files were used. This is a proposed evaluation, not a result. The exact Koala reference is still pending; no competitor claim is inferred from that name.
+This document describes evaluation design and public benchmark references, not a scheduled experiment or a general-capability result. The source survey below was recorded on September 19, 2026; version and availability statements refer to that review, not to a fresh benchmark reproduction.
 
-## What the primary sources support
+## Public benchmark references
 
-| Benchmark | Verified scope | Implication for Otto |
+| Benchmark | Source-review scope | Evaluation implication |
 | --- | --- | --- |
-| OSWorld-Verified | XLANG's July 2025 revision repaired 300+ reported task/environment/evaluator issues. Its maintainer instructions require comparable benchmark versions and a separate process for verified public leaderboard results. [Report](https://xlang.ai/blog/osworld-verified), [source](https://github.com/xlang-ai/OSWorld) | Use pinned versions and independent outcome graders. An Ubuntu score is not proof of native Mac/Windows capability; an adapted subset is not an official full-benchmark result. |
-| OSWorld 2.0 | The June 28 paper, revised July 13, 2026, defines 108 long workflows, human median about 1.6 hours, and a 500-step primary completion metric. It separates binary completion, partial progress, and safety audits. [Paper v2](https://arxiv.org/abs/2606.29537v2) | Useful long-horizon target after basic reliability. Do not compare a six-field fixture or 30 short tasks to its headline results. |
-| Current OSWorld-V2 release | The primary repository now recommends **osworld-v2.1**, released September 16, 2026. Code, gated tasks/assets, mock websites, and provider images must match that release; its supplied images are Docker/AWS Ubuntu environments. [Versioned README](https://github.com/xlang-ai/OSWorld-V2/blob/3d778a3c9a34a079316f70df023b166700445792/README.md) | Do not follow stale June/August setup instructions or describe paper results as current leaderboard scores. No gated data or infrastructure was provisioned here. |
-| Windows Agent Arena | Microsoft provides 150+ Windows tasks, repeatable VM state, extensible agents, and local/Azure execution. Its repository identifies `predict()` and `reset()` as the agent interface and Windows 11 VM setup. [Paper](https://arxiv.org/abs/2409.08264), [source](https://github.com/microsoft/WindowsAgentArena) | Best existing Windows integration starting point; retain the benchmark's task contracts, Windows image, budgets, and evaluators. Historical Navi results are not a current state-of-the-art target. |
-| MacArena | June 2026 paper: 421 tasks across 50 apps, including ported tasks and 49 new Mac-native tasks, on Apple Silicon virtualization. Public code and UTM VM setup exist. [Paper](https://arxiv.org/abs/2606.06560), [source](https://github.com/MacPaw/MacArena) | Strong first native-Mac harness candidate. Source README says inherited macOSWorld tasks carry noncommercial restrictions; check task-level licenses before redistributing a commercial eval bundle. This review did not boot or validate the image. |
-| macOSWorld | Primary project lists 202 tasks, five languages, 28 Mac-exclusive apps, and 29 safety tasks, with state-reset and evaluator scripts. [Project](https://macos-world.github.io/), [paper](https://arxiv.org/abs/2506.04135) | Useful language and deceptive-context coverage. Do not equate these distributions with cross-platform workflows. |
-| MacAgentBench | June 2026 paper and public repository describe 676 tasks across 25 apps, deterministic checks, and partial checkpoints. Nearly 60% involve GUI and CLI; the paper attributes much of the winning configuration's advantage to skill coverage. [Paper](https://arxiv.org/abs/2606.22557), [source](https://github.com/JetAstra/MacAgentBench) | Useful outcome/scoring examples. A GUI-only Otto versus a shell/AppleScript/skills-enabled framework is a system comparison with different powers, not an equal-tools model comparison. Do not silently grant Otto extra APIs just to reproduce the headline. |
+| OSWorld-Verified | XLANG's July 2025 revision repaired reported task/environment/evaluator issues. Its maintainer instructions require comparable benchmark versions and a separate process for verified public leaderboard results. [Report](https://xlang.ai/blog/osworld-verified), [source](https://github.com/xlang-ai/OSWorld) | Pin versions and use independent outcome graders. An Ubuntu score does not establish native Mac/Windows capability; an adapted subset is not an official full-benchmark result. |
+| OSWorld 2.0 | The June 28 paper, revised July 13, 2026, defines 108 long workflows, human median about 1.6 hours, and a 500-step primary completion metric. It separates binary completion, partial progress, and safety audits. [Paper v2](https://arxiv.org/abs/2606.29537v2) | Useful long-horizon coverage, not a comparison target for a six-field fixture. |
+| OSWorld-V2 release | At the source review, the repository recommended **osworld-v2.1**, released September 16, 2026. Its code, gated tasks/assets, mock websites, and provider images must match the release; supplied images are Docker/AWS Ubuntu environments. [Versioned README](https://github.com/xlang-ai/OSWorld-V2/blob/3d778a3c9a34a079316f70df023b166700445792/README.md) | Separate paper results, release-specific reproducibility, and current leaderboard claims. |
+| Windows Agent Arena | Microsoft provides Windows tasks, repeatable VM state, extensible agents, and local/Azure execution. Its repository identifies `predict()` and `reset()` as the agent interface. [Paper](https://arxiv.org/abs/2409.08264), [source](https://github.com/microsoft/WindowsAgentArena) | Retain task contracts, Windows images, budgets, and evaluators. Historical Navi results are not a current SOTA target. |
+| MacArena | June 2026 paper: 421 tasks across 50 apps, including ported tasks and 49 new Mac-native tasks, on Apple Silicon virtualization. [Paper](https://arxiv.org/abs/2606.06560), [source](https://github.com/MacPaw/MacArena) | The source README identifies noncommercial restrictions on inherited macOSWorld tasks. Check task-level licenses before redistribution. The survey did not boot the image. |
+| macOSWorld | The primary project lists 202 tasks, five languages, 28 Mac-exclusive apps, and 29 safety tasks, with reset and evaluator scripts. [Project](https://macos-world.github.io/), [paper](https://arxiv.org/abs/2506.04135) | Useful language and deceptive-context coverage; a different distribution from cross-platform workflows. |
+| MacAgentBench | June 2026 paper and source describe 676 tasks across 25 apps, deterministic checks, and partial checkpoints. Many tasks involve both GUI and CLI. [Paper](https://arxiv.org/abs/2606.22557), [source](https://github.com/JetAstra/MacAgentBench) | GUI-only and shell/AppleScript/skills-enabled systems have different powers. Label system comparisons separately from equal-tools model comparisons. |
 
-Repository HEADs observed through GitHub API: OSWorld `b138d348256078fa634fc3b73567a7337c793e6b`; OSWorld-V2 `3d778a3c9a34a079316f70df023b166700445792`; WAA `6d39ed88c545a0d40a7a02e39b928e278df7332b`; MacArena `dcdc7d366da12641578ab90f085d69db91651c58`; MacAgentBench `65632d1479bfb3aa1d2d3e292628f94d1743808f`. Pin published benchmark releases where available, not these moving development HEADs merely because they were observed.
+Repository revisions recorded during the source survey: OSWorld `b138d348256078fa634fc3b73567a7337c793e6b`; OSWorld-V2 `3d778a3c9a34a079316f70df023b166700445792`; Windows Agent Arena `6d39ed88c545a0d40a7a02e39b928e278df7332b`; MacArena `dcdc7d366da12641578ab90f085d69db91651c58`; MacAgentBench `65632d1479bfb3aa1d2d3e292628f94d1743808f`. Use published benchmark releases where available rather than treating these development revisions as release recommendations.
 
-## Product decision and claim
+## Define the claim before the run
 
-**Decision:** should an Otto delegation layer replace a host agent's direct desktop loop for a defined mix of developer/productivity work on macOS and Windows?
+A useful comparison asks whether a bounded execution layer improves a specified set of desktop outcomes relative to a host's direct tool loop. Identify task contracts, applications, OS versions, models, tool access, permission scope, approval policies, and budgets before execution. A result on one platform does not establish parity on another.
 
-**Candidate claim, only after evidence:** “On this named, versioned desktop task set, with these models, tools, permissions, and budgets, Otto achieved X/Y first-attempt outcomes at Z end-to-end cost and latency compared with the same host agent's direct tool loop.” Publish both platforms separately. Current evidence supports seven authored macOS exact-fill fixture cases, not general delegation, market leadership, or savings against a live Jev baseline. The Alpha.4 invalid-decision user trace belongs in the regression bank and must not be excluded from reliability accounting.
+Use relevant, authorized workflows with independently observable outcomes. Suitable checks can include a copied artifact's contents, application preference persistence, exact native field values, or an unsent draft plus no-send invariants. Prefer direct application or browser tests when those already cover the intended behavior. Do not force native automation into unrelated tasks.
 
-## First 30 authored tasks
+For paired comparisons, use equivalent clean profiles or resettable developer-owned states. Do not replay consequential effects to manufacture a baseline. Observations from nonidentical ongoing tasks can inform applicability, but are not a controlled causal savings estimate.
 
-Create six families with five distinct workflow templates each; 15 Mac and 15 Windows tasks overall. This is a pilot, not 30 independent copies of one form. Use clean test profiles and synthetic documents; keep setup/grader access unavailable to the agent.
+Author cases with explicit initial state, goal, constraints, permitted tools, expected outcome, and forbidden effects. Keep related workflow templates and data variants in the same development or holdout split. Repeated runs estimate consistency within a template; they do not create new independent tasks. Once a holdout is exposed for tuning, treat it as regression material rather than a fresh generalization result.
 
-| Family (5 each) | Concrete bounded examples | Independent success evidence |
+## Separate the mechanisms
+
+| Comparison | Hold constant | What it can test |
 | --- | --- | --- |
-| Files and navigation | Find by content/name; rename and organize copies; create an archive in a designated fixture directory | Directory manifest, exact filenames/content hashes, untouched sibling invariants |
-| Documents | Edit specified text; apply requested formatting; export a fixture document | Parsed text/style checks and independently rendered artifact comparison where needed |
-| Spreadsheets | Import CSV; compute a specified formula; sort/filter; save a copy | Workbook values/formulas/order and protected-cell invariants |
-| App configuration | Find and change a scoped editor preference; populate a project setup form; restore a previous value | App preference store or independent native state; no system-wide permission changes |
-| Research and transfer | Locate facts in seeded local browser pages; enter a referenced value in another app | Source-grounded exact facts and destination state; no external submission |
-| Cross-app completion | Convert notes to a document/table; reconcile two sources; prepare an unsent draft and saved artifact | Multi-artifact checks plus no-send/no-delete invariants |
+| Direct calls versus bounded workflows | Host model, native backend, literals, tool access, approvals, and budget | Execution packaging and host roundtrips. Give the baseline competent batching where supported. |
+| Fixed-rule versus Jev routing | The same supported observation/action choices, executor, verifier, and recovery options | Whether semantic routing justifies its additional calls. Include a no-Jev and, where useful, a cheap-router baseline. |
+| Full versus compact context | Native execution semantics and task set | Representation cost and any loss of target coverage or action quality. |
+| Otto versus another deployed tool | Declared task contract and measured outcomes | A product/system comparison. Different backend capabilities cannot automatically be credited to Jev. |
 
-Split before tuning: **12 development, 6 selection, 12 locked holdout** (2/1/2 per family), balanced as closely as possible by OS and difficulty. Group related templates, documents, apps' near-identical workflows, and all data variants together; changing names/values does not create an independent holdout. Have a separate author keep holdout details private. Once exposed, move the case to regression and replace it. The existing seven native fault fixtures and real parser failure are an additional regression suite, not holdout successes.
-
-Predeclare native AX/UIA, OCR-only, mixed navigation, locale/Unicode, multi-app, and interruption slices. Keep unsupported capabilities visible: abstention is a failed task with a safe outcome, not an exclusion. Pilot tasks should cover real intended work even where today's limited action set cannot finish it. Label adapted public tasks and licensing/provenance; do not call this suite OSWorld, WAA, or MacArena.
-
-## Comparable variants
-
-Freeze one exact host model/version, system prompt, native observations, tool schemas, app/image versions, resolution, network access, token/time/action ceilings, and approval policy for the controlled comparison.
-
-1. **No Jev:** the host planner chooses/actions through the same native tool interface directly.
-2. **Fixed rules:** the same host produces a plan; literal/unique-label matching and deterministic form execution handle eligible edits, with explicit abstention elsewhere. Include host planning cost. Report both all-task success and eligibility coverage; do not pretend a supplied-value executor solves arbitrary planning.
-3. **Host + Jev:** same host and task policy, adding Jev for grounded decisions. All Jev requests and latency count.
-4. **Jev-only incumbent:** useful separate product-mode baseline. Its different planner/model mix makes this an entire-system comparison, not a clean Jev-only ablation.
-
-Optional second controlled axis: full versus compact native context while holding execution semantics fixed. Disclose truncation/omissions and quality losses; serialized tokenizer counts are not bills. Do not give one variant shell/CLI, privileged files, hidden evaluator state, broader app scope, or bulk approval while restricting the others. If comparing deployed approval designs, label that separate workflow experiment and include interventions.
-
-Use one fixed ceiling selected on development cases (provisionally 60 native actions and 10 minutes machine time per short task, no automatic reset/retry after ambiguous writes). Match all arms and report ceiling hits. Longer tasks require their own budget stratum, not a quiet exception. Run three fresh-reset repetitions per locked case/variant, order randomized/Latin-square; repeats estimate consistency but do not increase the count of independent task templates.
+Keep native capability, execution authority, and provider configuration frozen within each controlled comparison. Do not give one arm hidden evaluator state, broader app scope, different approvals, or extra APIs. Return safe abstentions and unsupported tasks in the denominator instead of excluding them after the run.
 
 ## Cold and repeated work
 
-- **Cold:** new task/app state; clear agent memory, cached plans, and learned workflow artifacts. Record warm model service caches separately when provider control is unavailable.
-- **Repeated:** independent reset and new data for a previously encountered workflow. Define exactly what memory/compiled plan may persist, make the same opportunity available to each eligible arm, and charge initial learning/compilation. Report first run, steady-state, and break-even count including failed/revalidation/relearning attempts.
-- Keep these result tables separate. Do not tune on a heldout task and then call its later runs cold generalization.
+**Cold work** starts from new task state without retained plans or learned procedures. Record provider caching where visible; do not assume caches are controlled merely because a local profile was reset.
 
-## Outcomes, usage, and release gates
+**Repeated work** may retain a declared procedure or memory after independent state reset. Give equivalent reuse opportunities to comparison arms and charge initial preparation, failed validation, and relearning. Report the first run and repeated runs separately. Rebinding a current native target is not permission to replay old coordinates or approvals.
 
-Grade authoritative state outside the agent: full task completion first; meaningful partial checkpoints second; forbidden effects separately. Never use the agent's “done” message or its own screenshot interpretation as ground truth. Audit graders with known-good, known-bad, wrong-target, duplicate-write, and partial-result fixtures before the comparison. Use blinded human review only for residual visual/semantic ambiguity and retain disagreements.
+## Independent grading
 
-Record every provider attempt (host, Jev, other model), response, actual model, input/output/cache/reasoning usage where reported, retry/cancellation/error, native action, snapshot, approval, and timeout. Missing usage stays `null`/unknown. Provider-reported counters with dated public prices give an estimated charge; invoices or provider billing exports are the billed measure. Never infer zero spend from a missing response. Include all failed attempts in aggregate cost and cost per successful task, as well as host overhead. Report unknown-usage share; suppress total-billing savings claims when totals cannot be reconciled.
+Grade authoritative state outside the agent. Full completion, partial checkpoints, forbidden effects, safe stops, and uncertain effects are separate outcomes. An agent's finish message, a successful tool response, or its screenshot interpretation is not ground truth.
 
-Report first-attempt success, all-three-repeat success, critical failures, intervention count, complete-task machine time and human waiting separately, failure/timeout times, median/P90 latency, and quality–cost–latency Pareto plots. Give paired per-case deltas and confidence intervals resampling whole template families, not individual actions. With only 12 heldout templates, intervals will be wide; this pilot can expose dominant failures, not establish small gains or rare-event safety.
+Test graders with known-good, known-bad, wrong-target, duplicate-write, and partial-result evidence. Preserve original grades when correcting a grader; report regrades separately from new executions. Use human review only for remaining visual/semantic ambiguity and retain disagreements.
 
-Initial engineering gate: no wrong-app/unapproved/protected write or submit, no hidden mutation after Stop, exact final outcomes for required tasks, complete failure retention, and reproducible clean-reset runs. Any critical failure blocks the candidate. A comparative “cheaper/faster at equal quality” claim additionally needs a predeclared noninferiority margin and powered larger heldout run; choose its sample size from pilot discordance and the smallest useful effect. Thirty tasks are not a SOTA gate. Publish the task manifest, hashes, versions, budgets, eligibility/omissions, raw redacted receipts, all failures, and exact claim denominator.
+Keep three evidence layers distinct: requested tool operation, native dispatch attempt, and observed postcondition. Independently established persistence or task completion is a further layer. A correct stop can pass a safety contract while still failing to complete the task.
+
+## Usage and timing
+
+Record all host and specialist model attempts, actual model identifiers when reported, input/output/cache/reasoning usage, retries, cancellation, errors, and unknown usage. Count observations, native dispatch attempts, host roundtrips, and human interventions. Missing responses never imply zero spend.
+
+UTF-8 bytes, declared-tokenizer counts, provider usage, price-derived cost estimates, and billing records are separate measures. Include all failed attempts and upstream literal-generation costs in task totals, or explicitly exclude the same stage from every arm. Do not report billed savings without reconciled billing coverage.
+
+Measure end-to-end time with human waiting separated from execution. Include failure and timeout durations and state the denominator for percentile summaries. Report paired per-task differences and uncertainty; choose sample sizes and completion margins before examining comparison results. Small runs expose dominant failures but cannot establish small efficiency gains or rare-event safety.
+
+Measure CPU/RAM across the UI and all helpers, including OCR and any controller runtime. Candidate coverage and native acquisition time should accompany response-size measurements. A smaller response alone does not establish less work or preserved capability.
+
+## Publication and execution boundaries
+
+A public result needs versioned methods, source provenance, task eligibility, denominators, known failures, grading scope, and measurement limits. Publish only reviewed, non-sensitive evidence; retain raw application data and local report locations outside public artifacts.
+
+The existing [native contract evaluation](../evaluation-native-contracts.md) and [one-pair Codex comparison](../evaluation-codex-agent-bridge.md) remain narrow historical results. They are not broad desktop reliability, Jev superiority, or current SOTA evidence. This methodology does not authorize launching evaluations, acquiring gated tasks, downloading models, or provisioning infrastructure.
