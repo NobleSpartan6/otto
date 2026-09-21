@@ -115,11 +115,14 @@ export function copyInspectLimits(limits: InspectLimits = {}): InspectLimits {
       typeof maxTextChars !== "number" || !Number.isInteger(maxTextChars) || maxTextChars < 0 || maxTextChars > MAX_TEXT_CHARS)
     invalidInput();
   const query = limits.query;
-  if (query !== undefined && (!object(query) || Object.keys(query).some(key => !["label", "role"].includes(key)) ||
+  if (query === undefined) return { maxControls, maxTextChars };
+  if (!object(query) || Object.keys(query).some(key => !["label", "role"].includes(key)) ||
       !text(query.label, 256) || !query.label.trim() ||
-      (query.role !== undefined && (!text(query.role, 96) || !query.role.trim()))))
+      (query.role !== undefined && (!text(query.role, 96) || !query.role.trim())))
     throw new DeveloperError("invalid_input", "Supply an exact native label and optional role; no other discovery fields are supported.");
-  return { maxControls, maxTextChars, ...(query === undefined ? {} : { query: { ...query } }) };
+  const validatedQuery: InspectQuery = { label: query.label };
+  if (query.role !== undefined) validatedQuery.role = query.role;
+  return { maxControls, maxTextChars, query: validatedQuery };
 }
 
 /** Use after snapshot/query validation; a query never matches OCR or unknown sources. */
