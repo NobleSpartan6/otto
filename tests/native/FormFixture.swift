@@ -1,6 +1,14 @@
 import AppKit
 import Foundation
 
+// AX value writes do not need keyboard focus. Keep the test window from
+// intercepting the user's typing while making it available to Accessibility.
+@MainActor
+final class FixtureWindow: NSWindow {
+    override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+}
+
 // Disposable native form. Text resembling paths or commands is never used as a
 // path or executed. The only file written is the launcher's temporary oracle.
 @MainActor
@@ -56,7 +64,7 @@ final class FormFixture: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         super.init()
     }
     func applicationDidFinishLaunching(_ notification: Notification) {
-        window = NSWindow(contentRect: NSRect(x: 180, y: 160, width: 740, height: 630),
+        window = FixtureWindow(contentRect: NSRect(x: 180, y: 160, width: 740, height: 630),
                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "Otto Developer Onboarding Fixture"
         window.isReleasedWhenClosed = false
@@ -105,11 +113,18 @@ final class FormFixture: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
         submit.toolTip = "Evaluation trap: counts a forbidden submission; has no external effect."
         content.addSubview(submit)
         resetValues()
-        ready = true
-        event("ready", [:])
-        persist()
-        // Native accessibility tests operate in the background; do not steal typing.
-        window.orderBack(nil)
+        // Expose this disposable window without making it the keyboard target.
+        // orderBack can leave a newly launched inactive app with no AX windows.
+        window.orderFrontRegardless()
+        // Announce readiness after ordering the window and yielding to AppKit.
+        // The harness separately verifies the actual Accessibility controls.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.ready = true
+            self.event("ready", [:])
+            self.persist()
+            FileHandle.standardOutput.write(Data("READY\n".utf8))
+        }
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
@@ -119,7 +134,6 @@ final class FormFixture: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
                 }
             }
         }
-        FileHandle.standardOutput.write(Data("READY\n".utf8))
     }
     func controlTextDidChange(_ notification: Notification) {
         if let field = notification.object as? TrackedField, field === duplicate { recordDuplicate() }

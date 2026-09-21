@@ -39,7 +39,7 @@ flowchart TD
 - **Continuity:** maintain a compact ledger of constraints, verified facts, unresolved questions and failed attempts. Preserve evidence outside the model prompt. Add reusable procedures only after cold-task capability works; rebind targets and recheck preconditions each time.
 - **Small footprint:** keep native execution independent of the Electron window; lazily start OCR and other expensive helpers. Use event-driven changes where reliable. Measure total helper/UI CPU, steady and peak RAM, startup time, and idle activity before describing the app as lightweight.
 
-The agent interface should eventually expose task submission, status and cancellation, with compact evidence retrieval. Otto's current MCP server remains inspection/preparation only; it does not already provide this delegation service. A host agent can supply the general reasoning using its own supported tools and account, avoiding an additional planner subscription inside Otto. Standalone operation can use separately configured provider access. This does not turn a ChatGPT subscription into a general API key.
+The agent interface could eventually expose general task submission, status and cancellation, with compact evidence retrieval. The current executable MCP bridge already provides scoped inspection, single native actions, exact `run_steps` workflows, bounded Jev selection through `delegate`, and control release. It does not yet provide the proposed general goal-driven task service; see [the current bridge contract](../agent-bridge.md). A host agent can supply general reasoning using its own supported tools and account, avoiding an additional planner subscription inside Otto. Standalone operation can use separately configured provider access. This does not turn a ChatGPT subscription into a general API key.
 
 ## The distinctive Jev experiment
 
@@ -64,3 +64,5 @@ A defensible future claim would identify the tested systems and task set: **“O
 [GPT-6 Pro in the Otto project](https://chatgpt.com/g/g-p-6aab76ef83348191ba1a4f34ed604089-otto/c/6aab7709-8e24-83ea-acd3-ffb85c655d28) was consulted on this direction. Accepted: general capability first; optional Jev acceleration; a cheap-router baseline; bounded controller code outside Electron main; independent verification; meaningful task-level delegation. Deferred: automatic learned procedure reuse and broad autonomy until the general controller and shared permission broker are proven.
 
 The exact Koala reference remains unconfirmed. No feature comparison against an assumed product is used in this decision.
+
+Follow-up: [Prime RLM fit assessment](prime-rlm.md) proposes an optional context-processing worker and a separate Jev/RLM ablation. This extends the research plan; it does not change the current execution architecture.

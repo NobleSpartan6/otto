@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { SUITE_VERSION } from "./native-contracts.js";
 import { MAX_REPORT_BYTES, readReport, regradeReport } from "./replay.js";
+import { schedule } from "./plan.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const artifact = new URL("../docs/evidence/native-contracts-2026-09-20.json", import.meta.url);
@@ -47,6 +48,83 @@ test("not_run stays ungraded even with complete evidence and a forged passing gr
   assert.equal(result.summary.started, 9); assert.equal(result.summary.contractPassed, 9);
   assert.equal(result.trials[0]!.status, "not_run"); assert.equal(result.trials[0]!.grade, undefined);
   assert.equal(result.currentResult, "failed");
+});
+
+test("dropping a failed or unrun trial cannot shrink the planned denominator", () => {
+  for (const status of ["failed", "not_run"]) {
+    const report = copy();
+    report.trials[0].status = status;
+    report.trials[0].evidence.errors.push("Synthetic harness failure");
+    assert.equal(regradeReport(report, currentHash).currentResult, "failed");
+    report.trials.shift();
+    report.trials.forEach((row: any, index: number) => { row.index = index + 1; });
+    assert.throws(() => regradeReport(report, currentHash), /Trial count differs/);
+  }
+});
+
+test("missing or invalid options and altered schedule identities are rejected", () => {
+  for (const mutate of [
+    (report: any) => { delete report.options; },
+    (report: any) => { report.options = {}; },
+    (report: any) => { report.options.seed = "42"; },
+    (report: any) => { report.options.seed = 0; },
+    (report: any) => { report.options.repetitions = 2; },
+    (report: any) => { report.options.caseId = "unknown"; },
+    (report: any) => { report.options.run = false; },
+    (report: any) => { report.options.seed = 42; },
+    (report: any) => { [report.trials[0].index, report.trials[1].index] = [report.trials[1].index, report.trials[0].index]; },
+    (report: any) => { report.trials[0].family = "invented"; },
+  ]) { const report = copy(); mutate(report); assert.throws(() => regradeReport(report, currentHash)); }
+});
+
+test("legitimate selected-case and three-repetition schedules keep their full denominators", () => {
+  for (const repetitions of [1, 3]) {
+    const report = copy();
+    report.options = { run: true, repetitions, seed: 42, ...(repetitions === 1 ? { caseId: "exact-standard-six" } : {}) };
+    // Synthetic protocol records exercise scheduling, not new native execution.
+    report.trials = schedule(report.options).map(item => {
+      const row = structuredClone(saved.trials.find((entry: any) => entry.caseId === item.caseId));
+      for (const oracle of [row.evidence.before, row.evidence.after, ...row.evidence.checkpoints]) oracle.launchId += `-synthetic-r${item.repetition}`;
+      return { ...row, ...item };
+    });
+    const result = regradeReport(report, currentHash);
+    assert.equal(result.currentResult, "passed"); assert.equal(result.planValidated, true);
+    assert.equal(result.summary.scheduled, repetitions === 1 ? 1 : 30);
+  }
+});
+
+test("the same fixture evidence cannot be counted as another fresh trial", () => {
+  const report = copy();
+  const launch = report.trials[0].evidence.before.launchId;
+  for (const oracle of [report.trials[1].evidence.before, report.trials[1].evidence.after, ...report.trials[1].evidence.checkpoints]) oracle.launchId = launch;
+  assert.throws(() => regradeReport(report, currentHash), /reuse the same recorded fixture launch/);
+});
+
+test("an interrupted trial cannot pass even when its saved final values look correct", () => {
+  const report = copy(); report.status = "running";
+  report.trials[0].status = "running";
+  report.trials[0].phase = "cleanup_pending";
+  const result = regradeReport(report, currentHash);
+  assert.equal(result.currentResult, "failed"); assert.equal(result.reportComplete, false);
+  assert.equal(result.summary.scheduled, 10); assert.equal(result.summary.unfinished, 1);
+  assert.equal(result.summary.evidenceIncomplete, 1); assert.equal(result.summary.contractPassed, 9);
+  assert.equal(result.trials[0]!.grade?.goalCompleted, true);
+  assert.ok(result.trials[0]!.grade?.failures.includes("trial_interrupted_before_finalization"));
+});
+
+test("an unfinished report is not promoted to completed by passing terminal rows", () => {
+  const report = copy(); report.status = "running";
+  const result = regradeReport(report, currentHash);
+  assert.equal(result.summary.contractPassed, 10); assert.equal(result.currentResult, "failed");
+  assert.equal(result.reportComplete, false);
+});
+
+test("suite-level infrastructure failure cannot be hidden by passing trial grades", () => {
+  const report = copy(); report.status = "failed"; report.fatal = "PRIVATE_STORAGE_FAILURE";
+  const result = regradeReport(report, currentHash);
+  assert.equal(result.summary.contractPassed, 10); assert.equal(result.currentResult, "failed");
+  assert.equal(result.harnessFailed, true);
+  assert.doesNotMatch(JSON.stringify(result), /PRIVATE_STORAGE_FAILURE/);
 });
 
 test("missing evidence fails every started record while retaining unrun counts", () => {
@@ -112,5 +190,6 @@ test("CLI help needs no report, and one saved file prints recomputed counts and 
   const result = JSON.parse(text);
   assert.equal(result.currentResult, "passed"); assert.equal(result.graderChanged, true);
   assert.equal(result.summary.contractPassed, 10);
+  assert.match(result.replaySha256, /^[a-f0-9]{64}$/); assert.match(result.scheduleSha256, /^[a-f0-9]{64}$/);
   assert.throws(() => execFileSync(process.execPath, ["--import", "tsx", cli, "one.json", "two.json"], { cwd: root, stdio: "pipe" }));
 });

@@ -46,6 +46,15 @@ test("summary retains unrun trials and separates expected refusal from goal comp
   assert.equal(totals.goalCompleted, 0); assert.equal(totals.providerTokenUsage, null); assert.equal(totals.billedCost, null);
 });
 
+test("a started row without a grade remains unfinished and evidence-incomplete", () => {
+  const item = schedule(parseOptions([]))[0]!;
+  const result = summary([{ ...item, status: "running", toolCalls: 1,
+    evidence: { before: undefined, after: undefined, responses: [], runtimeUnchanged: false, errors: [] } }]);
+  assert.equal(result.scheduled, 1); assert.equal(result.started, 1);
+  assert.equal(result.unfinished, 1); assert.equal(result.evidenceIncomplete, 1);
+  assert.equal(result.contractPassed, 0);
+});
+
 test("the actual default CLI prints its complete plan without a native prerequisite", { timeout: 15_000 }, () => {
   const script = fileURLToPath(new URL("../tests/native/contract-suite.ts", import.meta.url));
   const result = spawnSync(process.execPath, ["--import", "tsx", script], { encoding: "utf8", timeout: 10_000 });

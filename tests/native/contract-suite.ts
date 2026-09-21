@@ -10,13 +10,19 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { PlatformDriver } from "../../desktop/native-driver.js";
 import { CASES, SUITE_VERSION, gradeCase, type ContractEvidence, type ContractGrade } from "../../evals/native-contracts.js";
+import { parseOptions, schedule } from "../../evals/plan.js";
+import { writeProgress } from "../../evals/progress.js";
+import { waitForFixtureReady } from "../../evals/fixture-readiness.js";
+import { AgentLease } from "../../desktop/agent-lease.js";
+export { parseOptions, schedule } from "../../evals/plan.js";
 
 // Real native integration checks, with scripted MCP requests and NO model.
 // Default invocation prints a plan. --run opts into disposable macOS UI work.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const environment = Object.fromEntries(["PATH", "HOME", "TMPDIR", "LANG"].flatMap(key => process.env[key] ? [[key, process.env[key]!]] : []));
 const runtimeFiles = [
-  "evals/native-contracts.ts", "tests/native/contract-suite.ts", "tests/native/FormFixture.swift", "scripts/launch-form-fixture.ts",
+  "evals/native-contracts.ts", "evals/plan.ts", "evals/progress.ts", "evals/fixture-readiness.ts", "tests/native/contract-suite.ts", "tests/native/FormFixture.swift", "scripts/launch-form-fixture.ts",
+  "desktop/native-driver.ts", "desktop/agent-lease.ts", "desktop/ocr.ts",
   "desktop/native/macos/otto-ax", "dist-desktop/desktop/agent-server.js", "dist-desktop/desktop/agent-lease.js",
   "dist-desktop/desktop/native-driver.js", "dist-desktop/desktop/ocr.js", "dist-desktop/core/agent-session.js",
   "dist-desktop/core/agent-workflow.js", "dist-desktop/core/developer.js", "dist-desktop/core/candidates.js", "package-lock.json",
@@ -27,6 +33,9 @@ type Trial = {
   status: "not_run" | "running" | "passed" | "failed";
   evidence: ContractEvidence; grade?: ContractGrade; elapsedMs?: number;
   toolCalls: number; launch?: Launch; cleanup?: string;
+  phase?: "launching" | "launched" | "ready" | "dispatch_pending" | "response_received" | "checkpoint_saved" | "cleanup_pending" | "complete";
+  pendingRequest?: { name: string; arguments: Record<string, unknown> };
+  readiness?: { attempts: number; elapsedMs: number };
 };
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
 const hash = (value: Buffer | string) => createHash("sha256").update(value).digest("hex");
@@ -44,39 +53,6 @@ export function parseLaunch(output: string): Launch {
   return value;
 }
 
-export function parseOptions(args: string[]) {
-  const options = { run: false, repetitions: 1, seed: 20260920, caseId: undefined as string | undefined };
-  const seen = new Set<string>();
-  for (let i = 0; i < args.length; i++) {
-    const flag = args[i]!;
-    if (seen.has(flag)) throw new Error("Repeated option.");
-    seen.add(flag);
-    if (flag === "--run") options.run = true;
-    else if (flag === "--case") {
-      options.caseId = args[++i];
-      if (!CASES.some(item => item.id === options.caseId)) throw new Error("Unknown contract case.");
-    } else if (flag === "--repetitions" || flag === "--seed") {
-      const raw = args[++i] ?? "";
-      if (!/^[0-9]+$/.test(raw)) throw new Error("Use a positive integer.");
-      const value = Number(raw);
-      if (!Number.isSafeInteger(value) || value < 1 || value > (flag === "--seed" ? 0xffffffff : 3)) throw new Error("Use 1–3 repetitions and a 32-bit positive seed.");
-      if (flag === "--seed") options.seed = value; else options.repetitions = value;
-    } else throw new Error("Usage: npm run eval:native-contracts -- [--run] [--case ID] [--repetitions 1..3] [--seed INTEGER]");
-  }
-  return options;
-}
-
-export function schedule(options: ReturnType<typeof parseOptions>) {
-  let state = options.seed >>> 0;
-  const rows = Array.from({ length: options.repetitions }, (_, repetition) => CASES.filter(item => !options.caseId || item.id === options.caseId)
-    .map(item => ({ caseId: item.id, family: item.family, repetition: repetition + 1 }))).flat();
-  for (let i = rows.length - 1; i > 0; i--) {
-    state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
-    const j = (state >>> 0) % (i + 1); [rows[i], rows[j]] = [rows[j]!, rows[i]!];
-  }
-  return rows.map((item, index) => ({ ...item, index: index + 1 }));
-}
-
 async function hashes() {
   return Object.fromEntries(await Promise.all(runtimeFiles.map(async file => [file, hash(await readFile(join(root, file)))])));
 }
@@ -91,7 +67,7 @@ async function preserveRuntime(output: string, fingerprint: Record<string, strin
   }
 }
 
-async function cleanup(launch: Launch) {
+async function cleanup(launch: Launch, retainEvidence = false) {
   assert.ok(Number.isSafeInteger(launch.pid) && launch.pid > 1 && launch.pid !== process.pid);
   assert.ok(dirname(launch.appPath).startsWith(join(tmpdir(), "otto-form-eval-")));
   assert.equal(launch.executable, join(launch.appPath, "Contents/MacOS/OttoFormFixture"));
@@ -106,6 +82,7 @@ async function cleanup(launch: Launch) {
     for (let i = 0; i < 50 && command(); i++) await delay(100);
     assert.equal(command(), "", "Fixture still running; temporary state retained.");
   }
+  if (retainEvidence) return "Exact fixture process exited; its temporary directory retained for evidence recovery.";
   await rm(dirname(launch.appPath), { recursive: true, force: true });
   return "Exact fixture process exited; its temporary directory removed.";
 }
@@ -118,7 +95,8 @@ export function summary(trials: Trial[]) {
     contractPassed: trials.filter(row => row.grade?.contractPassed).length,
     contractFailed: trials.filter(row => row.grade && !row.grade.contractPassed).length,
     notRun: trials.filter(row => row.status === "not_run").length,
-    evidenceIncomplete: trials.filter(row => row.grade && !row.grade.evidenceComplete).length,
+    evidenceIncomplete: trials.filter(row => row.status !== "not_run" && (!row.grade || !row.grade.evidenceComplete)).length,
+    unfinished: trials.filter(row => row.status === "running").length,
     goalCompleted: trials.filter(row => row.grade?.goalCompleted).length,
     nominalGoals: { completed: nominal.filter(row => row.grade?.goalCompleted).length, scheduled: nominal.length },
     expectedStops: { passed: stopCases.filter(row => row.grade?.contractPassed && row.grade.expectedStop).length, scheduled: stopCases.length },
@@ -159,23 +137,29 @@ export async function main(args = process.argv.slice(2)) {
   const interrupt = () => abort.abort();
   process.once("SIGINT", interrupt); process.once("SIGTERM", interrupt);
   let fingerprint: Record<string, string> = {}, fatal: string | undefined;
+  const saveProgress = () => writeProgress(join(output, "progress.json"), { schemaVersion: 1, suiteVersion: SUITE_VERSION,
+    status: "running", options, hashes: fingerprint, summary: summary(trials), trials });
   try {
+    await saveProgress();
     assert.equal(process.platform, "darwin", "Live fixture trials require macOS; nothing was dispatched.");
     fingerprint = await hashes();
     await writeFile(join(output, "plan.json"), JSON.stringify({ suiteVersion: SUITE_VERSION, options, cases: CASES, schedule: planned, hashes: fingerprint }, null, 2));
     await preserveRuntime(output, fingerprint);
+    await saveProgress();
     const probe = new PlatformDriver(root, false);
     const permissions = await probe.permissions().finally(() => probe.cancel());
     assert.equal(permissions.accessibility, true, "Accessibility unavailable; no permission request or native action attempted.");
     for (const row of trials) {
       if (abort.signal.aborted) { fatal = "Interrupted; remaining scheduled trials were not run."; break; }
       row.status = "running";
+      row.phase = "launching";
       const testCase = CASES.find(item => item.id === row.caseId)!;
       const directory = join(output, `${String(row.index).padStart(2, "0")}-${row.caseId}-r${row.repetition}`);
       await mkdir(directory, { mode: 0o700 });
       let client: Client | undefined, transport: StdioClientTransport | undefined;
       const start = performance.now();
       try {
+        await saveProgress();
         assert.deepEqual(await hashes(), fingerprint, "Runtime changed after the scheduled evaluation was frozen.");
         const fixture = spawnSync(process.execPath, ["--import", "tsx", join(root, "scripts/launch-form-fixture.ts"), "--fault", testCase.fault, ...(testCase.prefill ? ["--prefill"] : [])],
           { cwd: root, env: environment, encoding: "utf8", timeout: 90_000, maxBuffer: 1024 * 1024 });
@@ -183,6 +167,8 @@ export async function main(args = process.argv.slice(2)) {
         // failed launcher may already have started its detached fixture.
         try { row.launch = parseLaunch(fixture.stdout ?? ""); }
         catch { abort.abort(); }
+        row.phase = "launched";
+        await saveProgress();
         await writeFile(join(directory, "launch.stdout.txt"), fixture.stdout ?? "");
         await writeFile(join(directory, "launch.stderr.txt"), fixture.stderr ?? "");
         assert.equal(fixture.status, 0, "Fixture launch failed; see retained launcher output.");
@@ -192,6 +178,20 @@ export async function main(args = process.argv.slice(2)) {
         assert.equal(initial.pid, row.launch.pid); assert.equal(initial.status, "ready");
         assert.equal(initial.axWriteAttempts, 0); assert.equal(initial.forbiddenSubmitCount, 0); assert.equal(initial.resetCount, 0);
         for (const [label, value] of Object.entries(testCase.initialValues)) assert.equal(initial.fields[label]?.value, value, "Fixture initial state does not match the frozen case.");
+        const readinessDriver = new PlatformDriver(root, false);
+        const readinessLease = new AgentLease();
+        try {
+          readinessLease.acquire();
+          await readinessDriver.configure([row.launch.appId]);
+          row.readiness = await waitForFixtureReady(readinessDriver, row.launch.appId, testCase.initialValues, { signal: abort.signal });
+          const afterReadiness = JSON.parse(await readFile(row.launch.statePath, "utf8"));
+          assert.equal(afterReadiness.launchId, (row.evidence.before as { launchId: string }).launchId);
+          assert.equal(afterReadiness.axWriteAttempts, 0, "Readiness checks must not write.");
+          assert.equal(afterReadiness.fieldMutationCount, 0);
+          assert.equal(afterReadiness.forbiddenSubmitCount, 0); assert.equal(afterReadiness.resetCount, 0);
+        } finally { readinessDriver.cancel(); readinessLease.release(); }
+        row.phase = "ready";
+        await saveProgress();
         client = new Client({ name: "otto-native-contract-eval", version: SUITE_VERSION });
         transport = new StdioClientTransport({ command: process.execPath,
           args: [join(root, "dist-desktop/desktop/agent-server.js"), "--app", row.launch.appId, "--allow-actions"], cwd: root, env: environment, stderr: "pipe" });
@@ -202,14 +202,23 @@ export async function main(args = process.argv.slice(2)) {
         await writeFile(join(directory, "manifest.json"), JSON.stringify(manifest, null, 2));
         for (const workflow of testCase.runs) {
           const request = { name: "run_steps", arguments: { appId: row.launch.appId, ...workflow } };
+          row.phase = "dispatch_pending";
+          row.pendingRequest = request;
+          // A failed durable checkpoint prevents the next native request.
+          await saveProgress();
           row.toolCalls++;
           const result = await client.callTool(request, undefined, { signal: abort.signal, timeout: 150_000 });
           assert.ok(Array.isArray(result.content) && result.content.every(item => item.type === "text" && typeof item.text === "string"), "Expected a text-only MCP response.");
           const text = result.content.map(item => item.type === "text" ? item.text : "").join("\n");
           row.evidence.responses.push({ text, isError: result.isError === true });
+          row.phase = "response_received";
+          await saveProgress();
           await writeFile(join(directory, `exchange-${row.toolCalls}.json`), JSON.stringify({ request, result }, null, 2));
           await delay(100);
           row.evidence.checkpoints!.push(JSON.parse(await readFile(row.launch.statePath, "utf8")));
+          row.pendingRequest = undefined;
+          row.phase = "checkpoint_saved";
+          await saveProgress();
           // No repetition after a failed or ambiguous request, including the idempotence case.
           if (result.isError || JSON.parse(text).status !== "verified") break;
         }
@@ -223,8 +232,12 @@ export async function main(args = process.argv.slice(2)) {
         }
         try { await client?.close(); await transport?.close(); }
         catch (error) { row.evidence.errors.push("Transport cleanup failed: " + errorText(error)); abort.abort(); }
+        row.phase = "cleanup_pending";
+        let evidenceSaved = false;
+        try { await saveProgress(); evidenceSaved = row.evidence.after !== undefined; }
+        catch (error) { row.evidence.errors.push("Could not preserve final evidence: " + errorText(error)); abort.abort(); }
         if (row.launch) {
-          try { row.cleanup = await cleanup(row.launch); }
+          try { row.cleanup = await cleanup(row.launch, !evidenceSaved); }
           catch (error) { row.evidence.errors.push("Fixture cleanup failed: " + errorText(error)); abort.abort(); }
         }
         try { row.evidence.runtimeUnchanged = JSON.stringify(await hashes()) === JSON.stringify(fingerprint); }
@@ -233,7 +246,9 @@ export async function main(args = process.argv.slice(2)) {
         row.elapsedMs = Math.round(performance.now() - start);
         row.grade = gradeCase(testCase, row.evidence);
         row.status = row.grade.contractPassed ? "passed" : "failed";
-        await writeFile(join(directory, "result.json"), JSON.stringify(row, null, 2));
+        row.phase = "complete";
+        await saveProgress();
+        await writeProgress(join(directory, "result.json"), row);
         console.log(JSON.stringify({ case: row.caseId, repetition: row.repetition, status: row.status, grade: row.grade }));
       }
     }
@@ -246,7 +261,8 @@ export async function main(args = process.argv.slice(2)) {
       environment: { platform: process.platform, arch: process.arch, osRelease: release(), node: process.version }, hashes: fingerprint, trials,
       claim: "Scripted native integration contracts on one authored AppKit fixture. No LLM-agent capability, token savings, or production reliability estimate.",
       evidenceLayers: { protocol: "real MCP stdio", driver: "real macOS Accessibility", taskSelection: "scripted", model: "none", split: "public development/regression" } };
-    await writeFile(join(output, "report.json"), JSON.stringify(report, null, 2));
+    await writeProgress(join(output, "report.json"), report);
+    await writeProgress(join(output, "progress.json"), report);
     await writeFile(join(output, "report.md"), markdown(trials, output, fatal));
     console.log(JSON.stringify({ status, summary: totals, output }));
     process.exitCode = status === "passed" ? 0 : 1;

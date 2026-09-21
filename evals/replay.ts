@@ -4,6 +4,7 @@ import { open, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CASES, SUITE_VERSION, gradeCase, type ContractEvidence } from "./native-contracts.js";
+import { schedule, validateOptions } from "./plan.js";
 
 export const MAX_REPORT_BYTES = 4 * 1024 * 1024;
 const GRADER_FILE = "evals/native-contracts.ts";
@@ -20,10 +21,16 @@ export function regradeReport(report: unknown, currentGraderSha256: string) {
   requireValid(record(report) && report.schemaVersion === 1, "Expected a schemaVersion 1 report object.");
   requireValid(report.suiteVersion === SUITE_VERSION, "Report suiteVersion does not match the current suite.");
   requireValid(record(report.hashes) && Object.values(report.hashes).every(sha256), "Report hashes must contain SHA-256 values.");
-  requireValid(report.status === undefined || report.status === "passed" || report.status === "failed", "Invalid reported suite status.");
+  requireValid(report.status === undefined || report.status === "passed" || report.status === "failed" || report.status === "running", "Invalid reported suite status.");
+  requireValid(report.fatal === undefined || report.fatal === null || typeof report.fatal === "string", "Invalid suite failure record.");
+  const harnessFailed = typeof report.fatal === "string";
   requireValid(Array.isArray(report.trials) && report.trials.length > 0 && report.trials.length <= CASES.length * 3, "Expected 1–30 scheduled trials.");
+  const options = validateOptions(report.options);
+  requireValid(options.run, "An execution report requires run: true in its recorded options.");
+  const planned = schedule(options);
+  requireValid(report.trials.length === planned.length, "Trial count differs from the recorded experiment plan; missing rows cannot be excluded.");
   const records = report.trials;
-  const seen = new Set<string>(), indexes = new Set<number>();
+  const seen = new Set<string>(), indexes = new Set<number>(), launches = new Set<string>();
   const originalStatusCounts = { not_run: 0, running: 0, passed: 0, failed: 0 };
   const trials = records.map((row: unknown) => {
     requireValid(record(row), "Malformed trial record.");
@@ -31,14 +38,23 @@ export function regradeReport(report: unknown, currentGraderSha256: string) {
     requireValid(testCase, "Unknown trial caseId.");
     requireValid(integer(row.index, records.length) && !indexes.has(row.index), "Invalid or duplicated trial index.");
     requireValid(integer(row.repetition, 3), "Trial repetition must be 1–3.");
+    const expected = planned[row.index - 1]!;
+    requireValid(row.caseId === expected.caseId && row.repetition === expected.repetition && row.family === expected.family,
+      "Trial identity/order differs from the recorded seed and experiment plan.");
     requireValid(statuses.includes(row.status as TrialStatus), "Invalid trial status.");
     const identity = `${testCase.id}:${row.repetition}`;
     requireValid(!seen.has(identity), "Duplicated caseId and repetition.");
     seen.add(identity); indexes.add(row.index);
     const originalStatus = row.status as TrialStatus;
     originalStatusCounts[originalStatus]++;
+    if (originalStatus !== "not_run" && record(row.evidence) && record(row.evidence.before) && typeof row.evidence.before.launchId === "string" && row.evidence.before.launchId) {
+      requireValid(!launches.has(row.evidence.before.launchId), "Separate trials must not reuse the same recorded fixture launch.");
+      launches.add(row.evidence.before.launchId);
+    }
     // A scheduled but unrun row is never promoted using supplied/forged evidence.
-    const grade = originalStatus === "not_run" ? undefined : gradeCase(testCase, row.evidence as ContractEvidence);
+    let grade = originalStatus === "not_run" ? undefined : gradeCase(testCase, row.evidence as ContractEvidence);
+    if (originalStatus === "running" && grade) grade = { ...grade, contractPassed: false, evidenceComplete: false,
+      failures: [...grade.failures, "trial_interrupted_before_finalization"] };
     return { index: row.index, caseId: testCase.id, repetition: row.repetition, originalStatus,
       status: originalStatus === "not_run" ? "not_run" as const : grade!.contractPassed ? "passed" as const : "failed" as const,
       ...(grade ? { grade } : {}) };
@@ -46,10 +62,11 @@ export function regradeReport(report: unknown, currentGraderSha256: string) {
   const nominal = trials.filter(row => CASES.find(item => item.id === row.caseId)!.goalExpected);
   const stops = trials.filter(row => !CASES.find(item => item.id === row.caseId)!.goalExpected);
   const summary = {
-    scheduled: trials.length, started: trials.length - originalStatusCounts.not_run, notRun: originalStatusCounts.not_run,
+    scheduled: planned.length, started: planned.length - originalStatusCounts.not_run, notRun: originalStatusCounts.not_run,
     contractPassed: trials.filter(row => row.grade?.contractPassed).length,
     contractFailed: trials.filter(row => row.grade && !row.grade.contractPassed).length,
     evidenceIncomplete: trials.filter(row => row.grade && !row.grade.evidenceComplete).length,
+    unfinished: originalStatusCounts.running,
     goalCompleted: trials.filter(row => row.grade?.goalCompleted).length,
     nominalGoals: { completed: nominal.filter(row => row.grade?.goalCompleted).length, scheduled: nominal.length },
     expectedStops: { passed: stops.filter(row => row.grade?.contractPassed && row.grade.expectedStop).length, scheduled: stops.length },
@@ -58,13 +75,14 @@ export function regradeReport(report: unknown, currentGraderSha256: string) {
   const originalGraderSha256 = (report.hashes[GRADER_FILE] as string | undefined)?.toLowerCase() ?? null;
   const currentHash = currentGraderSha256.toLowerCase();
   return {
-    mode: "offline-regrade", suiteVersion: SUITE_VERSION,
+    mode: "offline-regrade", suiteVersion: SUITE_VERSION, planValidated: true, options,
     originalGraderSha256, currentGraderSha256: currentHash,
     graderChanged: originalGraderSha256 === null ? null : originalGraderSha256 !== currentHash,
     originalReportedStatus: report.status ?? null, originalStatusCounts,
-    currentResult: summary.contractPassed === summary.scheduled ? "passed" : "failed",
+    reportComplete: report.status !== "running", harnessFailed,
+    currentResult: summary.contractPassed === summary.scheduled && report.status !== "running" && !harnessFailed ? "passed" : "failed",
     summary, trials,
-    scope: "Regraded supplied evidence only. No native, model, or network execution; this does not authenticate the logs or prove a new run.",
+    scope: "Regraded supplied evidence against its recorded schedule. No native, model, or network execution; recorded options are not independent authentication of the original plan or logs.",
   };
 }
 
@@ -100,7 +118,9 @@ export async function main(args = process.argv.slice(2)) {
   const report = await readReport(args[0]!);
   const currentGraderSha256 = createHash("sha256").update(await readFile(new URL("./native-contracts.ts", import.meta.url))).digest("hex");
   const result = regradeReport(report, currentGraderSha256);
-  console.log(JSON.stringify(result, null, 2));
+  const replaySha256 = createHash("sha256").update(await readFile(fileURLToPath(import.meta.url))).digest("hex");
+  const scheduleSha256 = createHash("sha256").update(await readFile(new URL("./plan.ts", import.meta.url))).digest("hex");
+  console.log(JSON.stringify({ ...result, replaySha256, scheduleSha256 }, null, 2));
   return result.currentResult === "passed" ? 0 : 1;
 }
 
