@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { ControlCoverage, NativeSnapshot } from "../shared/types.js";
+import type { ControlCoverage, NativeControl, NativeSnapshot } from "../shared/types.js";
 import { isSensitive } from "./candidates.js";
 
 export const DEVELOPER_TTL_MS = 30_000;
@@ -8,9 +8,16 @@ const MAX_CONTROLS = 128;
 const MAX_TEXT_CHARS = 16_000;
 const ACTIONS = new Set(["press", "fill", "scrollUp", "scrollDown"]);
 
+export interface InspectQuery {
+  /** Exact, case-sensitive label after trimming and NFC normalization. */
+  label: string;
+  role?: string;
+}
 export interface InspectLimits {
   maxControls?: number;
   maxTextChars?: number;
+  /** Filters acquired native controls, not the helper's traversal scope. */
+  query?: InspectQuery;
 }
 export interface CompactControl {
   ref: string;
@@ -32,6 +39,14 @@ export interface CompactObservation {
   expiresAt: string;
   text: string;
   controls: CompactControl[];
+  /** Counts cover non-sensitive native matches before response truncation. */
+  discovery?: {
+    scope: "selected_native_tree";
+    observedMatches: number;
+    /** Unknown when native acquisition was partial or coverage was not reported. */
+    totalMatches: number | null;
+    matchesOmitted: number;
+  };
   sensitiveControlsOmitted: number;
   redacted: boolean;
   truncation: {
@@ -90,6 +105,29 @@ function labelKey(value: string) {
   return value.trim().normalize("NFC");
 }
 
+/** Validate and copy before awaits; callers cannot retarget a pending inspection. */
+export function copyInspectLimits(limits: InspectLimits = {}): InspectLimits {
+  if (!object(limits) || Object.keys(limits).some(key => !["maxControls", "maxTextChars", "query"].includes(key)))
+    invalidInput();
+  const maxControls = limits.maxControls ?? 64;
+  const maxTextChars = limits.maxTextChars ?? 4000;
+  if (typeof maxControls !== "number" || !Number.isInteger(maxControls) || maxControls < 1 || maxControls > MAX_CONTROLS ||
+      typeof maxTextChars !== "number" || !Number.isInteger(maxTextChars) || maxTextChars < 0 || maxTextChars > MAX_TEXT_CHARS)
+    invalidInput();
+  const query = limits.query;
+  if (query !== undefined && (!object(query) || Object.keys(query).some(key => !["label", "role"].includes(key)) ||
+      !text(query.label, 256) || !query.label.trim() ||
+      (query.role !== undefined && (!text(query.role, 96) || !query.role.trim()))))
+    throw new DeveloperError("invalid_input", "Supply an exact native label and optional role; no other discovery fields are supported.");
+  return { maxControls, maxTextChars, ...(query === undefined ? {} : { query: { ...query } }) };
+}
+
+/** Use after snapshot/query validation; a query never matches OCR or unknown sources. */
+export function matchesInspectQuery(control: NativeControl, query?: InspectQuery): boolean {
+  return query === undefined || (control.source === "accessibility" && labelKey(control.label) === labelKey(query.label) &&
+    (query.role === undefined || control.role === query.role));
+}
+
 // Redaction is separate from size limits: replacement can expand a short value.
 // One literal pass avoids repeatedly redacting text introduced by replacement.
 function redaction(protectedValues: string[] = []): (value: string) => string {
@@ -139,26 +177,9 @@ export class DeveloperSession {
   ): CompactObservation {
     // A failed refresh also revokes every previously exposed alias.
     this.invalidate();
-    if (
-      !object(limits) ||
-      Object.keys(limits).some(
-        (key) => !["maxControls", "maxTextChars"].includes(key),
-      )
-    )
-      invalidInput();
+    limits = copyInspectLimits(limits);
     const maxControls = limits.maxControls ?? 64;
     const maxTextChars = limits.maxTextChars ?? 4000;
-    if (
-      typeof maxControls !== "number" ||
-      typeof maxTextChars !== "number" ||
-      !Number.isInteger(maxControls) ||
-      maxControls < 1 ||
-      maxControls > MAX_CONTROLS ||
-      !Number.isInteger(maxTextChars) ||
-      maxTextChars < 0 ||
-      maxTextChars > MAX_TEXT_CHARS
-    )
-      invalidInput();
     const invalidSnapshot = () =>
       new DeveloperError(
         "invalid_snapshot",
@@ -229,7 +250,10 @@ export class DeveloperSession {
       if (cleaned !== value) redacted = true;
       return cleaned;
     };
-    const controls = safe
+    // Match before capping rows, but retain the full snapshot for redaction and
+    // label-count preparation. Filtering cannot manufacture complete acquisition.
+    const matches = safe.filter(control => matchesInspectQuery(control, limits.query));
+    const controls = matches
       .slice(0, maxControls)
       .map((control, index): CompactControl => {
         const ref = `c${index + 1}`;
@@ -278,9 +302,17 @@ export class DeveloperSession {
       expiresAt: new Date(captured + DEVELOPER_TTL_MS).toISOString(),
       text: cleanedText.slice(0, maxTextChars),
       controls,
+      ...(limits.query === undefined ? {} : { discovery: {
+        scope: "selected_native_tree" as const,
+        observedMatches: matches.length,
+        totalMatches: snapshot.controlCoverage === "complete" ? matches.length : null,
+        matchesOmitted: matches.length - controls.length,
+      } }),
       sensitiveControlsOmitted: snapshot.controls.length - safe.length,
       redacted,
       truncation: {
+        // Preserve the original whole-observation omission count, including
+        // filtered nonmatches. Legacy uniqueness checks must remain conservative.
         controlsOmitted: safe.length - controls.length,
         text: {
           originalChars: snapshot.text.length,

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DesktopApp, NativeAction, NativeControl, NativeDriver, NativeSnapshot } from "../shared/types.js";
-import { DeveloperError, DeveloperSession, DEVELOPER_TTL_MS, type CompactObservation, type InspectLimits } from "./developer.js";
+import { DeveloperError, DeveloperSession, DEVELOPER_TTL_MS, copyInspectLimits, matchesInspectQuery, type CompactObservation, type InspectLimits } from "./developer.js";
 import { isSensitive } from "./candidates.js";
 
 export interface AgentActionInput {
@@ -128,6 +128,7 @@ export class AgentSession {
   async inspect(appId: string, limits: InspectLimits = {}): Promise<CompactObservation> {
     this.reserve(); this.invalidate(); const generation = this.generation;
     try {
+      limits = copyInspectLimits(limits);
       if (!scopeId(appId) || !this.allowed.includes(appId)) throw new AgentSessionError("scope", "The app is outside this session's launcher scope.");
       const discovery = await this.native(() => this.driver.apps()); this.current(generation);
       const app = discovery.apps.find(candidate => candidate.id === appId);
@@ -257,8 +258,10 @@ export class AgentSession {
   private accept(snapshot: NativeSnapshot, app: DesktopApp, limits: InspectLimits): CompactObservation {
     this.validateSnapshot(snapshot, app);
     const observation = this.context.inspect(snapshot, limits);
-    const safe = snapshot.controls.filter(control => !isSensitive(control));
-    this.frame = { token: observation.snapshotToken, snapshot: structuredClone(snapshot), limits: { ...limits },
+    // Use the same ordered selection as the serializer; c1 may no longer be
+    // the first native control. Guards and key checks still retain the full frame.
+    const safe = snapshot.controls.filter(control => !isSensitive(control) && matchesInspectQuery(control, limits.query));
+    this.frame = { token: observation.snapshotToken, snapshot: structuredClone(snapshot), limits: copyInspectLimits(limits),
       bindings: new Map(observation.controls.map((control, index) => [control.ref, structuredClone(safe[index]!)])) };
     return observation;
   }

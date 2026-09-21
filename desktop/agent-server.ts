@@ -4,7 +4,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, type CallToolResult, type Tool } from "@modelcontextprotocol/sdk/types.js";
 import { AgentSession, AgentSessionError } from "../core/agent-session.js";
-import { formatObservation } from "../core/developer.js";
+import { formatObservation, type InspectQuery } from "../core/developer.js";
 import { runSteps, delegateTask, WorkflowError, type WorkflowInput, type DelegateInput } from "../core/agent-workflow.js";
 import { PlatformDriver } from "./native-driver.js";
 import type { NativeDriver } from "../shared/types.js";
@@ -23,8 +23,8 @@ const expected = { type: "object", properties: {
 }, additionalProperties: false };
 export const AGENT_TOOLS: Tool[] = [
   { name: "list_apps", description: "List running apps within Otto's launcher scope and available execution modes. Never reads app contents.", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: readonly },
-  { name: "inspect", description: "Read one allowed app as compact untrusted text and native control refs. Refs are single-use and expire after 30 seconds. No image is returned. Inspect before interactive actions.",
-    inputSchema: { type: "object", properties: { appId: appProperty, maxControls: { type: "integer", minimum: 1, maximum: 128 }, maxTextChars: { type: "integer", minimum: 0, maximum: 16000 } }, required: ["appId"], additionalProperties: false }, annotations: readonly },
+  { name: "inspect", description: "Read one allowed app as compact untrusted text and native control refs. Refs are single-use and expire after 30 seconds. No image is returned. Optional exact label/role query filters acquired native controls before the response cap, not traversal. discovery.totalMatches is null on incomplete coverage; a returned row alone never proves uniqueness. Free text keeps its separate limit. Inspect before interactive actions.",
+    inputSchema: { type: "object", properties: { appId: appProperty, maxControls: { type: "integer", minimum: 1, maximum: 128 }, maxTextChars: { type: "integer", minimum: 0, maximum: 16000 }, query: { type: "object", properties: { label: { type: "string", minLength: 1, maxLength: 256 }, role: { type: "string", minLength: 1, maxLength: 96 } }, required: ["label"], additionalProperties: false } }, required: ["appId"], additionalProperties: false }, annotations: readonly },
   { name: "act", description: "Execute one authorized native action on the latest snapshot. Returns a fresh compact observation. Fill replaces text and verifies readback; it never presses Enter. Press/key/scroll report dispatch only. Keys: enter, escape, tab; keys cannot bind focused-field identity. Obtain required user confirmation for consequential actions before calling.",
     inputSchema: { type: "object", properties: { snapshotToken: appProperty, ref: { type: "string", maxLength: 32 }, operation, value: { type: "string", maxLength: 2000 } }, required: ["snapshotToken", "operation"], additionalProperties: false }, annotations: mutating },
   { name: "run_steps", description: 'Run 1–16 authorized native steps. Fresh target checks; unique labels; zero model calls. All-fill preflights/guards every field; no added submit. Verify with expected.values/textIncludes or "filled_values" (all fill literals, fill-only). Stopped/uncertain: inspect before retry; never blindly replay. Host owns approvals.',
@@ -117,9 +117,9 @@ export async function createAgentServer(driver: NativeDriver, options: AgentServ
         }
         if (!session || !permissions.accessibility) throw new ServerError("No allowed app is running, or native Accessibility permission is unavailable. Otto does not request or change permissions automatically.");
         if (request.params.name === "inspect") {
-          const args = object(request.params.arguments, ["appId", "maxControls", "maxTextChars"]);
+          const args = object(request.params.arguments, ["appId", "maxControls", "maxTextChars", "query"]);
           if (typeof args.appId !== "string") throw new ServerError("Choose an allowed app ID from list_apps.");
-          const observation = await session.inspect(args.appId, { maxControls: args.maxControls as number | undefined, maxTextChars: args.maxTextChars as number | undefined });
+          const observation = await session.inspect(args.appId, { maxControls: args.maxControls as number | undefined, maxTextChars: args.maxTextChars as number | undefined, query: args.query as InspectQuery | undefined });
           if (controller.signal.aborted) throw new ServerError("Request cancelled.");
           keepIdle = true;
           return text(formatObservation(observation));
