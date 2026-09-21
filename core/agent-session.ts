@@ -71,6 +71,7 @@ export class AgentSession {
     const frame = this.latest();
     if (!Array.isArray(refs) || !refs.length || refs.length > 16 || refs.some(ref => !literal(ref, 256) || !ref) || new Set(refs).size !== refs.length)
       throw new AgentSessionError("invalid_input", "Pin one to sixteen distinct current native field references.");
+    this.requireCompleteFormCoverage(frame.snapshot);
     this.sameWindow(frame.snapshot, frame.snapshot);
     // A complete form identity cannot be established from anonymous native fields.
     if (frame.snapshot.controls.filter(nativeField).some(control => !literal(control.identity, 256) || !control.identity))
@@ -96,6 +97,7 @@ export class AgentSession {
     const pinned = this.fieldGuards.get(guard);
     if (!pinned || !Array.isArray(expected) || expected.length !== pinned.controls.length || expected.some(value => !literal(value, 2000)))
       throw new AgentSessionError("invalid_input", "Use this session's native field guard and complete bounded expected values.");
+    this.requireCompleteFormCoverage(snapshot);
     this.sameWindow(pinned.window, snapshot);
     if (fieldShape(snapshot) !== pinned.shape)
       throw new AgentSessionError("stale_snapshot", "The pinned native form changed. Remaining fields must not be filled.");
@@ -234,6 +236,12 @@ export class AgentSession {
     if (!this.frame || Date.now() - Date.parse(this.frame.snapshot.capturedAt) >= DEVELOPER_TTL_MS)
       throw new AgentSessionError("stale_snapshot", "The native observation expired or was consumed. Inspect again.");
     return this.frame;
+  }
+  private requireCompleteFormCoverage(snapshot: NativeSnapshot): void {
+    // Equal returned fields do not prove an unchanged form after partial acquisition.
+    // This uses native coverage, not compact-output truncation; explicit refs remain usable.
+    if (snapshot.controlCoverage !== "complete")
+      throw new AgentSessionError("stale_snapshot", "Native form coverage is incomplete or unknown. Inspect again before filling remaining fields.");
   }
   private readableField(control: NativeControl | undefined): void {
     if (!control || !nativeField(control) || !control.editable || !control.enabled || !control.actions.includes("fill") || isSensitive(control) ||
